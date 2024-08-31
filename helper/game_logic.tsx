@@ -1,4 +1,4 @@
-interface Card {
+export interface Card {
     code: string;
     image: string;
     images: {
