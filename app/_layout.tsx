@@ -81,6 +81,7 @@ export default function RootLayout() {
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="profile" options={{ headerShown: false }} />
             <Stack.Screen name="friends" options={{ headerShown: false }} />
+            <Stack.Screen name="room" options={{ headerShown: false }} />
           </Stack>
         )}
       </ClerkLoaded>

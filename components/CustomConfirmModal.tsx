@@ -14,7 +14,7 @@ export default function CustomConfirmModal(
         onConfirm()
     }
     return (
-        <View className='absolute w-screen h-screen justify-center items-center bg-black/50 z-10'>
+        <View className='absolute w-screen h-screen justify-center items-center bg-black/50 z-20'>
             <View className='bg-white p-3 flex flex-col space-y-3 rounded-lg w-1/2'>
                 <Text className='text-lg font-medium'>{content}</Text>
                 <View className='w-full h-[1px] bg-black'/> 

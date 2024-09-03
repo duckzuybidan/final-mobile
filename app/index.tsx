@@ -11,8 +11,15 @@ import Feather from '@expo/vector-icons/Feather';
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useRouter } from "expo-router";
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import CustomConfirmModal from "@/components/CustomConfirmModal";
+import CustomAds from "@/components/CustomAds";
+import RoomModal from "@/components/RoomModal";
 enum Strategy {
   Google = 'oauth_google',
+}
+type RoomModal = {
+  open: boolean,
+  type: 'create' | 'join'
 }
 export default function Page() {
   const router = useRouter();
@@ -23,6 +30,13 @@ export default function Page() {
   const {isSignedIn} = useAuth()
   const { startOAuthFlow: googleAuth} = useOAuth({strategy: "oauth_google"});
   const redirectUrl = Linking.createURL('/');
+  const [coins, setCoins] = useState<number | null>(null)
+  const [onModal, setOnModal] = useState(false)
+  const [onAds, setOnAds] = useState(false)
+  const [roomModal, setRoomModal] = useState<RoomModal>({
+    open: false,
+    type: 'create'
+  })
   const onSelectAuth = async (strategy: Strategy) => {
     const selectedAuth = {
       [Strategy.Google]: googleAuth,
@@ -52,18 +66,31 @@ export default function Page() {
   touchSound();
   await signOut(session?.id as any);
  }
+ const handleWatchAd = () => {
+  touchSound();
+  setOnAds(true)
+ }
+ const handleFinishAds = () => {
+  if(coins){
+    setCoins(coins + 30)
+    setDoc(doc(db, "users", user?.emailAddresses[0].emailAddress!), {
+      coins: coins + 30
+    }, { merge: true });
+   }
+ }
  useEffect(() => {
   const putUserToDB = async () => {
     if(isSignedIn){
       setIsLoading(false)
       const checked = await getDoc(doc(db, "users", user?.emailAddresses[0].emailAddress!));
           if(checked.exists()){
+            setCoins(checked.data().coins)
             return
           }
           const userRef = collection(db, "users");
           await setDoc(doc(userRef, user?.emailAddresses[0].emailAddress!), {
             name: user?.fullName,
-            coins: 0,
+            coins: 500,
             friends: [],
             avatar: user?.imageUrl
           }, { merge: true });
@@ -72,6 +99,14 @@ export default function Page() {
   putUserToDB()
  }, [isSignedIn])
   return (
+  <>
+    <RoomModal open={roomModal.open} onClose={() => setRoomModal({...roomModal, open: false})} type={roomModal.type} email={user?.emailAddresses[0].emailAddress!}/>
+    <CustomConfirmModal open={onModal} onClose={() => setOnModal(false)} content="Watch an ad to get 30 coins?" onConfirm={handleWatchAd}/>
+    <CustomAds 
+      open={onAds} 
+      onClose={() => setOnAds(false)} 
+      onFinish={handleFinishAds}
+    />
     <View className="relative flex-1 justify-center items-center gap-y-3">
       <StatusBar barStyle="light-content" />
       <Image source={require('@/assets/screens/background.jpg')} 
@@ -79,7 +114,7 @@ export default function Page() {
         className="absolute h-full w-full"
       />
       <SignedIn>
-        <View className="relative w-full h-full">
+        <View className="relative w-full h-full flex justify-center items-center">
           <TouchableOpacity className="absolute top-[10%] right-[5%]" onPress={handleMenu}>
             <Feather name="menu" size={25} color="white"/>
           </TouchableOpacity>
@@ -113,7 +148,36 @@ export default function Page() {
               </View>
             </TouchableOpacity>
           </View>}
+          <View className="absolute top-[15%] left-[5%] flex flex-row space-x-2 items-center">
+            {coins ? (
+              <Text className="text-white font-semibold text-2xl">{coins}</Text> 
+            ) : (
+              <Text className="text-white font-semibold text-2xl">---</Text>
+            )}
+            <Image source={require('@/assets/stuff/coin.jpg')} className="w-6 h-6 rounded-full"/>
+            <TouchableOpacity onPress={() => {
+              touchSound();
+              setOnModal(true)
+            }}>
+              <AntDesign name="pluscircle" size={17} color="white" />
+            </TouchableOpacity>
+          </View>
+          <View className="flex flex-col items-center space-y-3">
+            <TouchableOpacity 
+              className="bg-red-500 rounded-md p-3 flex flex-row items-center"
+              onPress={() => setRoomModal({...roomModal, open: true, type: 'create'})}
+            >
+              <Text className="text-white text-xl font-semibold">Create Room</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              className="bg-green-500 rounded-md p-3 flex flex-row items-center"
+              onPress={() => setRoomModal({...roomModal, open: true, type: 'join'})}
+            >
+              <Text className="text-black text-xl font-semibold">Join Room</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+        
       </SignedIn>
       <SignedOut>
         {isLoading && <LoadingIcon />}
@@ -126,5 +190,6 @@ export default function Page() {
         </TouchableOpacity>}
       </SignedOut>
     </View>
+    </>
   );
 }
