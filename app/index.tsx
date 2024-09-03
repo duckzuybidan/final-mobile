@@ -5,15 +5,16 @@ import { touchSound } from "@/utils/effects";
 import * as Linking from 'expo-linking';
 import { useEffect, useState } from "react";
 import {db} from '@/firebase'
-import { collection, doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot, setDoc } from "firebase/firestore";
 import { LoadingIcon } from "@/components/LoadingIcon";
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from "@expo/vector-icons/AntDesign";
-import { useRouter } from "expo-router";
+import { router, useRouter } from "expo-router";
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import CustomConfirmModal from "@/components/CustomConfirmModal";
 import CustomAds from "@/components/CustomAds";
 import RoomModal from "@/components/RoomModal";
+import { useNavigationState } from "@react-navigation/native";
 enum Strategy {
   Google = 'oauth_google',
 }
@@ -22,7 +23,7 @@ type RoomModal = {
   type: 'create' | 'join'
 }
 export default function Page() {
-  const router = useRouter();
+  const routeName = useNavigationState(state => state.routes[state.index].name);
   const [isLoading, setIsLoading] = useState(false);
   const [onMenu, setOnMenu] = useState(false);
   const { signOut, session } = useClerk();
@@ -37,6 +38,7 @@ export default function Page() {
     open: false,
     type: 'create'
   })
+  const [inRoomNo, setInRoomNo] = useState<string | null>(null)
   const onSelectAuth = async (strategy: Strategy) => {
     const selectedAuth = {
       [Strategy.Google]: googleAuth,
@@ -62,9 +64,11 @@ export default function Page() {
    touchSound();
    setOnMenu(!onMenu)
  }
- const handleSignOut = async () => {
+ const handleSignOut = () => {
   touchSound();
-  await signOut(session?.id as any);
+  setCoins(null)
+  setInRoomNo(null)
+  signOut(session?.id as any);
  }
  const handleWatchAd = () => {
   touchSound();
@@ -85,6 +89,9 @@ export default function Page() {
       const checked = await getDoc(doc(db, "users", user?.emailAddresses[0].emailAddress!));
           if(checked.exists()){
             setCoins(checked.data().coins)
+            onSnapshot(doc(db, "users", user?.emailAddresses[0].emailAddress!), (doc) => {
+              setInRoomNo(doc.data()?.inRoomNo)
+            })
             return
           }
           const userRef = collection(db, "users");
@@ -92,7 +99,8 @@ export default function Page() {
             name: user?.fullName,
             coins: 500,
             friends: [],
-            avatar: user?.imageUrl
+            avatar: user?.imageUrl,
+            inRoomNo: "0000000"
           }, { merge: true });
     }
   }
@@ -100,7 +108,14 @@ export default function Page() {
  }, [isSignedIn])
   return (
   <>
-    <RoomModal open={roomModal.open} onClose={() => setRoomModal({...roomModal, open: false})} type={roomModal.type} email={user?.emailAddresses[0].emailAddress!}/>
+    <RoomModal 
+      open={roomModal.open} 
+      onClose={(roomNo?: string) => {
+        setRoomModal({...roomModal, open: false})
+        roomNo && setInRoomNo(roomNo)
+      }} 
+      type={roomModal.type} email={user?.emailAddresses[0].emailAddress!}
+    />
     <CustomConfirmModal open={onModal} onClose={() => setOnModal(false)} content="Watch an ad to get 30 coins?" onConfirm={handleWatchAd}/>
     <CustomAds 
       open={onAds} 
@@ -162,20 +177,38 @@ export default function Page() {
               <AntDesign name="pluscircle" size={17} color="white" />
             </TouchableOpacity>
           </View>
-          <View className="flex flex-col items-center space-y-3">
+          <>
+            {!inRoomNo && <LoadingIcon/>}
+            {inRoomNo && (inRoomNo !== "0000000" ? (
+              <TouchableOpacity 
+              className="bg-sky-500 rounded-md p-3 flex flex-row items-center"
+              onPress={() => {
+                touchSound(); 
+                router.push(`/room?id=${inRoomNo}`)}}
+            >
+              <Text className="text-white text-xl font-semibold">You are in room {inRoomNo}</Text>
+            </TouchableOpacity>
+            ): (
+            <View className="flex flex-col items-center space-y-2">
             <TouchableOpacity 
               className="bg-red-500 rounded-md p-3 flex flex-row items-center"
-              onPress={() => setRoomModal({...roomModal, open: true, type: 'create'})}
+              onPress={() => {
+                touchSound(); 
+                setRoomModal({...roomModal, open: true, type: 'create'})}}
             >
               <Text className="text-white text-xl font-semibold">Create Room</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               className="bg-green-500 rounded-md p-3 flex flex-row items-center"
-              onPress={() => setRoomModal({...roomModal, open: true, type: 'join'})}
+              onPress={() => {
+                touchSound();
+                setRoomModal({...roomModal, open: true, type: 'join'})}}
             >
               <Text className="text-black text-xl font-semibold">Join Room</Text>
             </TouchableOpacity>
-          </View>
+            </View>
+            ))}
+          </>
         </View>
         
       </SignedIn>

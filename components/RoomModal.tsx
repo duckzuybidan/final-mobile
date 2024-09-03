@@ -1,12 +1,13 @@
 
 import { db } from '@/firebase'
+import { touchSound } from '@/utils/effects'
 import { router } from 'expo-router'
-import { collection, doc, getDoc, setDoc } from 'firebase/firestore'
+import { arrayUnion, collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { useState } from 'react'
 import { View, Text, TouchableOpacity, TextInput } from 'react-native'
 import Toast from 'react-native-toast-message'
 
-export default function RoomModal({open, onClose, type, email}: {open: boolean, onClose: () => void, type: 'create' | 'join', email: string}) {
+export default function RoomModal({open, onClose, type, email}: {open: boolean, onClose: (roomNo?: string) => void, type: 'create' | 'join', email: string}) {
     const [formData, setFormData] = useState({
         roomId: '',
         password: ''
@@ -31,10 +32,15 @@ export default function RoomModal({open, onClose, type, email}: {open: boolean, 
         setDoc(doc(roomRef, formData.roomId), {
             members: [email],
             password: formData.password,
-            owner: email
+            host: email
         })
-        setFormData({roomId: '', password: ''})
+        const userRef = collection(db, "users");
+        updateDoc(doc(userRef, email), {
+            inRoomNo: formData.roomId
+        })
         router.push(`/room?id=${formData.roomId}`)
+        setFormData({roomId: '', password: ''})
+        onClose(formData.roomId)
     }
     const handleJoinRoom = async () => {
         const checked = await getDoc(doc(db, "rooms", formData.roomId))
@@ -52,7 +58,17 @@ export default function RoomModal({open, onClose, type, email}: {open: boolean, 
             })
             return
         }
+        const roomRef = doc(db, "rooms", formData.roomId)
+        updateDoc(roomRef, {
+            members: arrayUnion(email)
+        })
+        const userRef = collection(db, "users");
+        updateDoc(doc(userRef, email), {
+            inRoomNo: formData.roomId
+        })
         router.push(`/room?id=${formData.roomId}`)
+        setFormData({roomId: '', password: ''})
+        onClose(formData.roomId)
     }
     if(!open) {
         return null
@@ -86,10 +102,14 @@ export default function RoomModal({open, onClose, type, email}: {open: boolean, 
                 </View>
                 <View className='w-full h-[1px] bg-black'/>
                 <View className='flex flex-row space-x-3 w-full items-center justify-around'>
-                    <TouchableOpacity className='p-3 bg-red-500 rounded-lg' onPress={onClose}>
+                    <TouchableOpacity className='p-3 bg-red-500 rounded-lg' onPress={() => {
+                        touchSound()
+                        onClose()
+                    }}>
                         <Text className='text-white text-center font-semibold'>Cancel</Text>
                     </TouchableOpacity>
                     <TouchableOpacity className='p-3 bg-green-500 rounded-lg' onPress={() => {
+                        touchSound()
                         if(type === 'create') {
                             handleCreateRoom()
                         } else {
