@@ -1,4 +1,4 @@
-interface Card {
+export interface Card {
   code: string;
   image: string;
   images: {
@@ -54,11 +54,14 @@ function isThreeOfAKind(cards: Card[]): boolean {
 function isFourOfAKind(cards: Card[]): boolean {
   return cards.length === 4 && cards[0].value === cards[1].value && cards[1].value === cards[2].value && cards[2].value === cards[3].value;
 }
-
+function is3PairStraight(cards: Card[]): boolean {
+return cards.length === 6 && isStraight([cards[0],cards[2],cards[4]]) &&isPair([cards[0],cards[1]]) &&isPair([cards[2],cards[3]]) &&isPair([cards[4],cards[5]])
+}
 
 export default function isValidPlay(cards: Card[],onBoardCards: Card[],isReTurn: boolean): boolean {
     if(isReTurn&&(isPair(cards)||isThreeOfAKind(cards)||isFourOfAKind(cards)||isStraight(cards)||cards.length===1)) return true;
-   if(onBoardCards.length===1&&onBoardCards[0].value===2&&isFourOfAKind(cards)&&cards[0].value===2)   return true;
+    if(onBoardCards.length===1&&onBoardCards[0].value===2&&is3PairStraight(cards) )   return true;  
+   if(onBoardCards.length===1&&onBoardCards[0].value===2&&isFourOfAKind(cards) )   return true;
    if(onBoardCards.length===0&&(isPair(cards)||isThreeOfAKind(cards)||isFourOfAKind(cards)||isStraight(cards)||cards.length===1)) return true;
    if(onBoardCards.length===1&&cards.length===1&&compareCards(cards[0],onBoardCards[0]))return true;
    if(isPair(cards)&&isPair(onBoardCards)&&compareCards(cards[0],onBoardCards[0])) return true;
