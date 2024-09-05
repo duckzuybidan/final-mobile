@@ -122,7 +122,6 @@ export default function RoomModal({
           </Text>
           <TextInput
             className="bg-white rounded-lg px-2 h-[36px]"
-            keyboardType="numeric"
             value={formData.roomId}
             onChangeText={(text) => {
               if (text.length <= 6) {
