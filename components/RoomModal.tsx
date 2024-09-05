@@ -134,7 +134,6 @@ export default function RoomModal({
           <Text className="font-medium">Password</Text>
           <TextInput
             className="bg-white rounded-lg px-2 h-[36px]"
-            keyboardType="numeric"
             value={formData.password}
             onChangeText={(text) =>
               setFormData({ ...formData, password: text })

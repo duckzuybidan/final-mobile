@@ -14,13 +14,18 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { View, Image, TouchableOpacity, Button } from "react-native";
+import { View, Image, TouchableOpacity, Button, Text } from "react-native";
 
 export default function Page() {
   const { id } = useLocalSearchParams();
   const { user } = useUser();
   const email = user?.emailAddresses[0].emailAddress;
   const [members, setMembers] = useState([]);
+  const [roomInfo, setRoomInfo] = useState({
+    roomId: "",
+    password: "",
+    host: ""
+  })
   const handleOutRoom = async () => {
     touchSound();
     const room = await getDoc(doc(db, "rooms", id as string));
@@ -95,6 +100,11 @@ export default function Page() {
             ?.members.slice(index)
             .concat(room.data()?.members.slice(0, index))
         );
+        setRoomInfo({
+          roomId: room.data()?.roomId,
+          password: room.data()?.password,
+          host: room.data()?.host
+        })
       });
     };
     fetchRoom();
@@ -105,18 +115,28 @@ export default function Page() {
         source={require("@/assets/screens/room-background.jpg")}
         className="w-full h-full"
       />
-        <Button title="Start game" onPress={() =>  handleStartGame()} /> 
+        <TouchableOpacity className="absolute" onPress={handleStartGame}>
+          <View className="bg-sky-500 p-3">
+            <Text className="font-semibold">Start Game</Text>
+          </View>
+        </TouchableOpacity>
       <TouchableOpacity
         className="absolute top-[10%] right-[5%]"
         onPress={handleOutRoom}
       >
         <Feather name="log-out" size={30} color="white" />
       </TouchableOpacity>
-     
-      <UserSlot no={1} userEmail={members[0]} />
-      <UserSlot no={2} userEmail={members[1]} />
-      <UserSlot no={3} userEmail={members[2]} />
-      <UserSlot no={4} userEmail={members[3]} />
+      {[...Array(4)].map((_, index) => {
+        const member = members[index];
+        return (
+          <UserSlot 
+            key={index} 
+            no={index + 1} 
+            userEmail={member} 
+            isHost={roomInfo.host === member} 
+          />
+          );
+      })}
     </View>
   );
 }
