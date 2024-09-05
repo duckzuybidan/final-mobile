@@ -8,6 +8,12 @@ export interface Card {
   value: number;
   suit: string;
 }
+export interface Player {
+   email: string; 
+   hand: Card[]; 
+   onTurn: boolean;
+   isPass: boolean;
+} 
 const cardValues: { [key: string]: number } = {
   '3': 1, '4': 2, '5': 3, '6': 4, '7': 5,
   '8': 6, '9': 7, '10': 8, 'JACK': 9,
