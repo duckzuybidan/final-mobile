@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, TextInput, Image } from 'react-native'
 import { useEffect, useState } from 'react'
 import { useLocalSearchParams } from 'expo-router'
-import { collection, doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, updateDoc } from 'firebase/firestore'
 import {db} from '@/firebase'
 import { Poppins_600SemiBold, useFonts } from '@expo-google-fonts/poppins';
 import { LoadingIcon } from '@/components/LoadingIcon'
@@ -63,10 +63,10 @@ export default function Page() {
         touchSound();
         try {
             const userRef = collection(db, "users");
-            await setDoc(doc(userRef, email as string), {
+            await updateDoc(doc(userRef, email as string), {
                 name: userData?.name,
                 avatar: userData?.avatar,
-            }, { merge: true });
+            });
             Toast.show({
                 type: 'success',
                 text1: 'Success',

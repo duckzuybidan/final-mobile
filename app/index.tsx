@@ -5,7 +5,7 @@ import { touchSound } from "@/utils/effects";
 import * as Linking from 'expo-linking';
 import { useEffect, useState } from "react";
 import {db} from '@/firebase'
-import { collection, doc, getDoc, onSnapshot, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
 import { LoadingIcon } from "@/components/LoadingIcon";
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -77,9 +77,9 @@ export default function Page() {
  const handleFinishAds = () => {
   if(coins){
     setCoins(coins + 30)
-    setDoc(doc(db, "users", user?.emailAddresses[0].emailAddress!), {
+    updateDoc(doc(db, "users", user?.emailAddresses[0].emailAddress!), {
       coins: coins + 30
-    }, { merge: true });
+    });
    }
  }
  useEffect(() => {

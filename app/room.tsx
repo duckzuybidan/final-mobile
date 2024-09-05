@@ -15,11 +15,12 @@ import {
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { View, Image, TouchableOpacity, Button, Text } from "react-native";
+import Toast from "react-native-toast-message";
 
 export default function Page() {
   const { id } = useLocalSearchParams();
   const { user } = useUser();
-  const email = user?.emailAddresses[0].emailAddress;
+  const currentEmail = user?.emailAddresses[0].emailAddress;
   const [members, setMembers] = useState([]);
   const [roomInfo, setRoomInfo] = useState({
     roomId: "",
@@ -29,21 +30,21 @@ export default function Page() {
   const handleOutRoom = async () => {
     touchSound();
     const room = await getDoc(doc(db, "rooms", id as string));
-    if (room.data()?.host === email) {
+    if (room.data()?.host === currentEmail) {
       if (members.length === 1) {
         deleteDoc(doc(db, "rooms", id as string));
       } else {
         updateDoc(doc(db, "rooms", id as string), {
-          members: arrayRemove(email as string),
+          members: arrayRemove(currentEmail as string),
           host: members[1],
         });
       }
     } else {
       updateDoc(doc(db, "rooms", id as string), {
-        members: arrayRemove(email as string),
+        members: arrayRemove(currentEmail as string),
       });
     }
-    updateDoc(doc(db, "users", email as string), {
+    updateDoc(doc(db, "users", currentEmail as string), {
       inRoomNo: "0000000",
     });
     router.back();
@@ -52,7 +53,7 @@ export default function Page() {
   const handleStartGame = async () => {
     const players: Player[] = []; 
     const room = await getDoc(doc(db, "rooms", id as string));
-    if (room.data()?.host !== email) return;
+    if (room.data()?.host !== currentEmail) return;
     
     const dealUrl =
       "https://www.deckofcardsapi.com/api/deck/"+ room.data()?.deck_id.deck_id + "/draw/?count="+members.length*13 
@@ -93,7 +94,7 @@ export default function Page() {
   useEffect(() => {
     const fetchRoom = () => {
       onSnapshot(doc(db, "rooms", id as string), (room) => {
-        const index = room.data()?.members.indexOf(email);
+        const index = room.data()?.members.indexOf(currentEmail);
         setMembers(
           room
             .data()
@@ -133,10 +134,12 @@ export default function Page() {
             key={index} 
             no={index + 1} 
             userEmail={member} 
-            isHost={roomInfo.host === member} 
+            host={roomInfo.host} 
+            
           />
           );
       })}
+      <Toast/>
     </View>
   );
 }

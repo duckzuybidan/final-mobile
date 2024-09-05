@@ -1,7 +1,7 @@
 import { db } from '@/firebase'
 import { touchSound } from '@/utils/effects'
 import { useLocalSearchParams } from 'expo-router'
-import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore'
+import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore'
 import { useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, TextInput, Image, ScrollView } from 'react-native'
 import Toast from 'react-native-toast-message'
@@ -92,12 +92,10 @@ export default function Page() {
     try{
       setIsPending(false)
       const requestRef = collection(db, "friend_requests");
-      await setDoc(doc(requestRef, `${email}-${findUserData?.email}`), {
-        from: email,
-        to: findUserData?.email,
+      await updateDoc(doc(requestRef, `${email}-${findUserData?.email}`), {
         createdAt: Date.now().toString(),
         status: Status.cancel
-      }, { merge: true });
+      });
     }
     catch(error) {
       setIsPending(true)
@@ -165,17 +163,17 @@ export default function Page() {
       setRequests(requests.filter((user) => user.email !== user.email))
       setFriends([...friends, {email: user.email, name: user.name, avatar: user.avatar, coins: user.coins, friends: user.friends}])
       const requestRef = collection(db, "friend_requests");
-      setDoc(doc(requestRef, `${user.email}-${email}`), {
-        status: Status.accepted,
-        createAt: Date.now().toString()
-      }, { merge: true });
+      updateDoc(doc(requestRef, `${user.email}-${email}`), {
+        createAt: Date.now().toString(),
+        status: Status.accepted
+      });
       const userRef = collection(db, "users");
-      setDoc(doc(userRef, user.email), {
+      updateDoc(doc(userRef, user.email), {
         friends: arrayUnion(email)
-      }, { merge: true });
-      setDoc(doc(userRef, email as string), {
+      });
+      updateDoc(doc(userRef, email as string), {
         friends: arrayUnion(user.email)
-      }, { merge: true });
+      });
     }
     catch(error) {
       Toast.show({
@@ -191,10 +189,10 @@ export default function Page() {
     try{
       setRequests(requests.filter((user) => user.email !== fromEmail))
       const requestRef = collection(db, "friend_requests");
-      setDoc(doc(requestRef, `${fromEmail}-${email}`), {
+      updateDoc(doc(requestRef, `${fromEmail}-${email}`), {
         status: Status.cancel,
         createAt: Date.now().toString()
-      }, { merge: true });
+      });
     }
     catch(error) {
       Toast.show({
@@ -209,12 +207,12 @@ export default function Page() {
     try{
       setFriends(friends.filter((user) => user.email !== selectedEmail))
       const userRef = collection(db, "users");
-      setDoc(doc(userRef, selectedEmail), {
+      updateDoc(doc(userRef, selectedEmail), {
         friends: arrayRemove(email as string)
-      }, { merge: true });
-      setDoc(doc(userRef, email as string), {
+      });
+      updateDoc(doc(userRef, email as string), {
         friends: arrayRemove(selectedEmail)
-      }, { merge: true });
+      });
     }
     catch(error) {
       Toast.show({
@@ -230,33 +228,35 @@ export default function Page() {
       setIsRequestsLoading(true)
       try{
         const friendRequestsRef = collection(db, "friend_requests");
-        const querySnapshot = await getDocs(query(friendRequestsRef, where("to", "==", email)));
-        const requestEmails = querySnapshot.docs.map((res) => {
-          if(res.data().status === Status.pending){
-            return res.data().from
-          }
-          return null
-        }).filter((res) => res !== null)
-        const fetchUsers = async (emails: string[]) => {
-          const promises = emails.map(async (email) => {
-            const user = await getDoc(doc(db, 'users', email))
-            if(user.exists()){
-              return {
-                email: user.id,
-                name: user.data()?.name,
-                avatar: user.data()?.avatar,
-                coins: user.data()?.coins,
-                friends: user.data()?.friends
-              }
+        onSnapshot(query(friendRequestsRef, where("to", "==", email)), async (querySnapshot) => {
+          const requestEmails = querySnapshot.docs.map((res) => {
+            if(res.data().status === Status.pending){
+              return res.data().from
             }
             return null
-          })
-          const users = await Promise.all(promises)
-          return users.filter((res) => res !== null)
-        }
-        const users = await fetchUsers(requestEmails)
-        setRequests(users)
-        setIsRequestsLoading(false)
+          }).filter((res) => res !== null)
+          const fetchUsers = async (emails: string[]) => {
+            const promises = emails.map(async (email) => {
+              const user = await getDoc(doc(db, 'users', email))
+              if(user.exists()){
+                return {
+                  email: user.id,
+                  name: user.data()?.name,
+                  avatar: user.data()?.avatar,
+                  coins: user.data()?.coins,
+                  friends: user.data()?.friends
+                }
+              }
+              return null
+            })
+            const users = await Promise.all(promises)
+            return users.filter((res) => res !== null)
+          }
+          const users = await fetchUsers(requestEmails)
+          setRequests(users)
+          setIsRequestsLoading(false)
+        }); 
+        
       }
       catch(error) {
         setIsRequestsLoading(false)
