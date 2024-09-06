@@ -23,10 +23,10 @@ export default function Page() {
   const currentEmail = user?.emailAddresses[0].emailAddress;
   const [members, setMembers] = useState([]);
   const [roomInfo, setRoomInfo] = useState({
-    roomId: "",
     password: "",
     host: ""
   })
+  const [onInfo, setOnInfo] = useState(false);
   const handleOutRoom = async () => {
     touchSound();
     const room = await getDoc(doc(db, "rooms", id as string));
@@ -102,7 +102,6 @@ export default function Page() {
             .concat(room.data()?.members.slice(0, index))
         );
         setRoomInfo({
-          roomId: room.data()?.roomId,
           password: room.data()?.password,
           host: room.data()?.host
         })
@@ -116,6 +115,15 @@ export default function Page() {
         source={require("@/assets/screens/room-background.jpg")}
         className="w-full h-full"
       />
+       <TouchableOpacity className='absolute top-[10%] left-[5%]' onPressIn={() => setOnInfo(true)} onPressOut={() => setOnInfo(false)}>
+          <Feather name="info" size={24} color="white" />
+        </TouchableOpacity>
+        {onInfo && (
+          <View className="absolute flex flex-col top-[10%] left-[10%] bg-white p-3 rounded-md">
+            <Text className="font-semibold">Room ID: {id}</Text>
+            <Text className="font-semibold">Password: {roomInfo.password}</Text>
+          </View>
+        )}
         <TouchableOpacity className="absolute" onPress={handleStartGame}>
           <View className="bg-sky-500 p-3">
             <Text className="font-semibold">Start Game</Text>
@@ -135,7 +143,6 @@ export default function Page() {
             no={index + 1} 
             userEmail={member} 
             host={roomInfo.host} 
-            
           />
           );
       })}
