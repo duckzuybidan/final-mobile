@@ -78,11 +78,12 @@ export default function Page() {
             email: members[i],
             hand: cardSegments[i],
             onTurn: false,
-            isPass: false,
+            isPass: false, 
           });
         } 
         updateDoc(doc(db, "rooms", id as string), {
-          player : players
+          player : players, 
+          onboardCard:[]  
         });    
       })
       .catch((error) => {

@@ -1,5 +1,5 @@
 import { db } from '@/firebase'
-import { Player, sortHand } from '@/helper/game_logic'
+import { Card, Player, sortHand } from '@/helper/game_logic'
 import { touchSound } from '@/utils/effects'
 import { useUser } from '@clerk/clerk-expo'
 import AntDesign from '@expo/vector-icons/AntDesign'
@@ -7,7 +7,7 @@ import Feather from '@expo/vector-icons/Feather'
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import { useLocalSearchParams } from 'expo-router'
 import { arrayRemove, collection, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { View, Text, Image, Pressable, StyleSheet, Button, TouchableOpacity } from 'react-native'
 import Toast from 'react-native-toast-message'
 import CustomConfirmModal from './CustomConfirmModal'
@@ -33,6 +33,7 @@ export default function UserSlot({
     onTurn: false,
     isPass: false
   });
+  const [onboardCard,setOnboardCard] = useState<Card[]>([]) 
   const [selectedCardIndices, setSelectedCardIndices] = useState<number[]>([]); 
   const { id } = useLocalSearchParams(); 
   const [userData, setUserData] = useState<{
@@ -122,15 +123,32 @@ export default function UserSlot({
       })
     }
   }
-  async function getPlayer(){
-    const room = await getDoc(doc(db, "rooms", id as string));
-    if(room.data()?.player.length===0)return
-    for(let i =0;i<room.data()?.members.length;i++){
-       if(room.data()?.player[i].email===userEmail){
-        setPlayer(room.data()?.player[i])}
-    }    
-  }   
-   
+  useEffect(() => { 
+    const fetchPlayerData = async () => {
+      const roomDoc = await getDoc(doc(db, 'rooms', id as string));
+      const roomData = roomDoc.data();
+      if (!roomData) return;
+
+      const playerData = roomData.player.find((p: Player) => p.email === currentEmail);
+      if (playerData) {
+        setPlayer(playerData);
+      }
+    };
+     
+    const fetchOnboardCard = async () => {
+      const roomDoc = await getDoc(doc(db, 'rooms', id as string));
+      const roomData = roomDoc.data();
+      if (!roomData) return;
+
+      const onboardCard = roomData.onboardcard ;
+      if (onboardCard) {
+        setOnboardCard(onboardCard);
+      }
+    }; 
+    fetchPlayerData();
+    fetchOnboardCard(); 
+  } );
+
   const handleCardClick = (index: number) => {
     setSelectedCardIndices((prevSelectedIndices) => {
       if (prevSelectedIndices.includes(index)) {
@@ -140,23 +158,28 @@ export default function UserSlot({
       }
     });
   };
-  const handleSort = async () => {
-    const sortedCards = sortHand(player?.hand);
-    const room = await getDoc(doc(db, "rooms", id as string));
-    for(let i =0;i<room.data()?.members.length;i++){
-      if(room.data()?.player[i].email===userEmail){ 
-        updateDoc(doc(db, "rooms", id as string), {
-          [`player.${i}.hand`] : sortedCards,
-        });
-         
-      } 
-   }   
+
+  const handleSort = useCallback(async () => {
+    if (!player.hand.length || !id) return;
+
+    const sortedCards = sortHand(player.hand);
+
+    const roomDoc = await getDoc(doc(db, 'rooms', id as string));
+    const roomData = roomDoc.data();
+    if (!roomData) return;
+
+    const playerIndex = roomData.player.findIndex((p: Player) => p.email === userEmail);
+    if (playerIndex === -1) return;
+
+    await updateDoc(doc(db, 'rooms', id as string), {
+      [`player.${playerIndex}.hand`]: sortedCards,
+    });
+
     setPlayer((prevPlayer) => ({
       ...prevPlayer,
       hand: sortedCards,
-    })); 
- 
-  };
+    }));
+  }, [player.hand, ]);
   const AddIconStatus = () => {
     if(no === 1) return 
     if(userData?.friends.includes(currentEmail as string)) {
@@ -192,7 +215,7 @@ export default function UserSlot({
     )
   }
 
-  getPlayer();
+  
 
  
   useEffect(() => {
