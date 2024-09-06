@@ -93,7 +93,6 @@ export default function Page() {
       setIsPending(false)
       const requestRef = collection(db, "friend_requests");
       await updateDoc(doc(requestRef, `${email}-${findUserData?.email}`), {
-        createdAt: Date.now().toString(),
         status: Status.cancel
       });
     }
@@ -115,7 +114,6 @@ export default function Page() {
       await setDoc(doc(requestRef, `${email}-${findUserData?.email}`), {
         from: email,
         to: findUserData?.email,
-        createdAt: Date.now().toString(),
         status: Status.pending
       }, { merge: true });
       Toast.show({
@@ -164,7 +162,6 @@ export default function Page() {
       setFriends([...friends, {email: user.email, name: user.name, avatar: user.avatar, coins: user.coins, friends: user.friends}])
       const requestRef = collection(db, "friend_requests");
       updateDoc(doc(requestRef, `${user.email}-${email}`), {
-        createAt: Date.now().toString(),
         status: Status.accepted
       });
       const userRef = collection(db, "users");
@@ -191,7 +188,6 @@ export default function Page() {
       const requestRef = collection(db, "friend_requests");
       updateDoc(doc(requestRef, `${fromEmail}-${email}`), {
         status: Status.cancel,
-        createAt: Date.now().toString()
       });
     }
     catch(error) {

@@ -1,5 +1,4 @@
 import { View, Text, TouchableOpacity } from 'react-native'
-import { useState } from 'react'
 import { touchSound } from '@/utils/effects'
 
 export default function CustomConfirmModal(
