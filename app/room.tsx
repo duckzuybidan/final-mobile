@@ -81,9 +81,16 @@ export default function Page() {
             isPass: false, 
           });
         } 
+        let turn =0
+        if(members.length===4){ 
+            turn = cardSegments.findIndex(segment =>
+            segment.some((card: { code: string; })  => card.code === "3S" )
+          );
+        } 
         updateDoc(doc(db, "rooms", id as string), {
           player : players, 
-          onboardCard:[]  
+          onboardCard:[],
+          turn:turn    
         });    
       })
       .catch((error) => {

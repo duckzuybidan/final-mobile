@@ -1,5 +1,5 @@
 import { db } from '@/firebase'
-import { Card, Player, sortHand } from '@/helper/game_logic'
+import isValidPlay, { Card, Player, sortHand } from '@/helper/game_logic'
 import { touchSound } from '@/utils/effects'
 import { useUser } from '@clerk/clerk-expo'
 import AntDesign from '@expo/vector-icons/AntDesign'
@@ -180,6 +180,14 @@ export default function UserSlot({
       hand: sortedCards,
     }));
   }, [player.hand, ]);
+  
+  const handlePlayCards = useCallback(async () => {
+    const roomDoc = await getDoc(doc(db, 'rooms', id as string));
+    const roomData = roomDoc.data(); 
+    const playedCards = selectedCardIndices.map((index) => player.hand[index]); 
+    if (!isValidPlay(playedCards, roomData?.onboardcards, true)) return; 
+  }, [player.hand ]);
+    
   const AddIconStatus = () => {
     if(no === 1) return 
     if(userData?.friends.includes(currentEmail as string)) {
