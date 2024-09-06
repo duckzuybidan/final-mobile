@@ -1,4 +1,4 @@
-import { touchSound } from '@/utils/effects'
+
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import { ResizeMode, Video } from 'expo-av'
 import { View, TouchableOpacity } from 'react-native'

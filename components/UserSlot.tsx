@@ -47,7 +47,7 @@ export default function UserSlot({
   const position = () => {
     switch (no) {
       case 1:
-        return 'bottom-[5%] left-[45%]'
+        return 'bottom-[1%] left-[45%]'
       case 2:
         return 'top-[40%] left-[5%]'
       case 3:
@@ -62,7 +62,6 @@ export default function UserSlot({
       setIsPending(false)
       const requestRef = collection(db, "friend_requests");
       await updateDoc(doc(requestRef, `${currentEmail}-${userEmail}`), {
-        createdAt: Date.now().toString(),
         status: Status.cancel
       });
     }
@@ -84,7 +83,6 @@ export default function UserSlot({
       await setDoc(doc(requestRef, `${currentEmail}-${userEmail}`), {
         from: currentEmail,
         to: userEmail,
-        createdAt: Date.now().toString(),
         status: Status.pending
       }, { merge: true });
       Toast.show({
@@ -222,10 +220,6 @@ export default function UserSlot({
       </TouchableOpacity>
     )
   }
-
-  
-
- 
   useEffect(() => {
     if(!userEmail) return
     const fetchUser = async () => {
@@ -238,45 +232,47 @@ export default function UserSlot({
   return (
     <>
     <CustomConfirmModal open={onModal} onClose={() => setOnModal(false)}  content={'Are you sure you want to kick this player?'} onConfirm={handleKick} />
-    <View className={`absolute ${position()}`}>
-         {no== 1 &&   (<View
-            style={{
-              flexDirection: "row",
-              justifyContent: "center",
-              paddingBottom: 100,
-            }}
-          >
-           {/* <Button title="Sort" onPress={() => handleSort()} /> */}
-            <View style={{ width: ((player?.hand.length? + 1:0) * 90) / 2 }}>
-              {player?.hand.map((card, index) => (
-                <Pressable
-                  key={index}
-                  onPress={() => handleCardClick(index)}
-                  style={[styles.cardWrapper, { left: (index * 90) / 2 }]}
-                >
-                  <Image
-                    source={{ uri: card.image }}
-                    style={[
-                      styles.reactLogo,
-                      selectedCardIndices.includes(index) &&
-                        styles.selectedCardHighlight,
-                    ]}
-                  />
-                </Pressable>
-              ))}
-            </View> 
-          </View>)}
-        {userEmail ? (
-          <View className='relative'>
-          <View className='flex flex-row space-x-2 items-center'>
-            <Image source={{uri: userData?.avatar}} className='w-[40px] h-[40px] rounded-full' />
-            <KickIcon />
+    {no== 1 && (
+      <View className='absolute w-screen h-screen'>
+        <View className='absolute bottom-[42%] left-[10%]'>
+          {player?.hand.map((card, index) => (
+            <Pressable
+              key={index}
+              onPress={() => handleCardClick(index)}
+              style={[styles.cardWrapper, { left: (index * 70) / 2 }]}
+            >
+              <Image
+                source={{ uri: card.image }}
+                  style={[
+                  styles.reactLogo,
+                  selectedCardIndices.includes(index) &&
+                  styles.selectedCardHighlight,
+                  ]}
+                className='scale-[0.6]'
+              />
+            </Pressable>
+            ))}
+        </View>
+        <TouchableOpacity onPress={handleSort} className='absolute right-[15%] bottom-[24%]'>
+          <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
+            <Text className='text-white font-semibold'>Sort</Text>
           </View>
+        </TouchableOpacity>
+      </View>)}
+    <View className={`absolute ${position()}`}>
+        {userEmail ? (
+          <View className={`relative ${no === 1 && 'flex flex-row items-center space-x-2'}`}>
+            <View className='flex flex-row space-x-2 items-center'>
+              <Image source={{uri: userData?.avatar}} className='w-[40px] h-[40px] rounded-full' />
+              <KickIcon />
+            </View>
+            <View>
             <Text className='text-sm text-white'>{userData?.name}</Text>
             <View className='flex flex-row items-center space-x-1'>
               <Text className='text-sm text-white'>{userData?.coins}</Text>
               <Image source={require('../assets/stuff/coin.jpg')} className='rounded-full w-[16px] h-[16px]' />
               <AddIconStatus />
+            </View>
             </View>
             {(host === userEmail) && <View className='absolute top-0 left-0'>
               <FontAwesome5 name="crown" size={8} color="yellow" />
