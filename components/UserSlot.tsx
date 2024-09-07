@@ -50,7 +50,7 @@ export default function UserSlot({
   const [friends, setFriends] = useState<User[]>([])
   const [isFriendsLoading, setIsFriendsLoading] = useState(false)
   const [onFriendList, setOnFriendList] = useState(false)
-  const [currentPlayerIdx, setCurrPlayerIdx] = useState(0)
+  const [isSended, setIsSended] = useState(false)
   const position = () => {
     switch (no) {
       case 1:
@@ -128,7 +128,27 @@ export default function UserSlot({
       })
     }
   }
-  
+  const handleInvite = async (toEmail: string) => {
+    setIsSended(true)
+    setTimeout(() => setIsSended(false), 5000)
+    try{
+    const invitationRef = collection(db, "invitations");
+    setDoc(doc(invitationRef, `${currentEmail}-${toEmail}-${id}`), {
+      from: currentEmail,
+      to: toEmail,
+      roomID: id,
+      createdAt: Date.now().toLocaleString()
+    }, { merge: true });
+    } catch(error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Something went wrong',
+        text2Style: {fontSize: 16}
+      })
+    }
+
+  }
   const AddIconStatus = () => {
     if(no === 1) return 
     if(userData?.friends.includes(currentEmail as string)) {
@@ -176,14 +196,12 @@ export default function UserSlot({
     onSnapshot(doc(db, 'rooms', id as string), (room) => {
       if(room.data()?.player){
         setPlayer(room.data()?.player.find((p: Player) => p.email === currentEmail));
-        setCurrPlayerIdx(room.data()?.player.findIndex((p: Player) => p.email === currentEmail));
       }
       if(room.data()?.onboardcard){
         setOnboardCard(room.data()?.onboardcard);
       }
     })
   }, []);
-
   const handleCardClick = (index: number) => {
     setSelectedCardIndices((prevSelectedIndices) => {
       if (prevSelectedIndices.includes(index)) {
@@ -292,11 +310,18 @@ export default function UserSlot({
               <View className='relative w-[220px] flex flex-row items-center space-x-3 bg-slate-100 p-2 rounded-md' key={index}>
                 <Image source={{uri: user.avatar}} className='w-[24px] h-[24px] rounded-full'/>
                 <Text className='text-md'>{user.name}</Text>
+                {isSended ? (
+                  <View className='absolute right-3'>
+                    <Feather name="check" size={20} color="green" />
+                  </View>
+                ) : (
                 <TouchableOpacity className='absolute right-3' onPress={() => {
                     touchSound()
+                    handleInvite(user.email)
                   }}>
                     <FontAwesome5 name="plus-square" size={20} color="black" />
-                  </TouchableOpacity>
+                </TouchableOpacity>
+                )}
               </View>
             ))}
           </ScrollView>
