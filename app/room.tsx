@@ -25,7 +25,8 @@ export default function Page() {
   const [members, setMembers] = useState([]);
   const [roomInfo, setRoomInfo] = useState({
     password: "",
-    host: ""
+    host: "",
+    deck_id: "",
   })
   const [onInfo, setOnInfo] = useState(false);
   const handleOutRoom = async () => {
@@ -53,15 +54,14 @@ export default function Page() {
 
   const handleStartGame = async () => {
     const players: Player[] = []; 
-    const room = await getDoc(doc(db, "rooms", id as string));
-    if (room.data()?.host !== currentEmail) return;
+    if (roomInfo.host !== currentEmail) return;
     
     const dealUrl =
-      "https://www.deckofcardsapi.com/api/deck/"+ room.data()?.deck_id.deck_id + "/draw/?count="+members.length*13 
+      "https://www.deckofcardsapi.com/api/deck/"+ roomInfo.deck_id + "/draw/?count="+members.length*13 
       const shuffleUrl =
-      "https://www.deckofcardsapi.com/api/deck/"+  room.data()?.deck_id.deck_id +"/shuffle/";
+      "https://www.deckofcardsapi.com/api/deck/"+  roomInfo.deck_id +"/shuffle/";
     
-      fetch(shuffleUrl)
+    fetch(shuffleUrl)
     fetch(dealUrl)
       .then((response) => response.json())
       .then((data) => {
@@ -74,7 +74,7 @@ export default function Page() {
           suit: card.suit,
         }))
       );
-        for(let i = 0 ; i<members.length;i++){
+        for(let i = 0; i < members.length; i++){
           players.push({
             email: members[i],
             hand: cardSegments[i],
@@ -82,8 +82,8 @@ export default function Page() {
             isPass: false, 
           });
         } 
-        let turn =0
-        if(members.length===4){ 
+        let turn = 0
+        if(members.length === 4){ 
             turn = cardSegments.findIndex(segment =>
             segment.some((card: { code: string; })  => card.code === "3S" )
           );
@@ -105,14 +105,12 @@ export default function Page() {
       onSnapshot(doc(db, "rooms", id as string), (room) => {
         const index = room.data()?.members.indexOf(currentEmail);
         setMembers(
-          room
-            .data()
-            ?.members.slice(index)
-            .concat(room.data()?.members.slice(0, index))
+          room.data()?.members.slice(index).concat(room.data()?.members.slice(0, index))
         );
         setRoomInfo({
           password: room.data()?.password,
-          host: room.data()?.host
+          host: room.data()?.host,
+          deck_id: room.data()?.deck_id.deck_id,
         })
       });
     };
@@ -134,11 +132,13 @@ export default function Page() {
           </View>
         )}
         
-        <TouchableOpacity className="absolute" onPress={handleStartGame}>
-          <View className="bg-sky-500 p-3">
-            <Text className="font-semibold">Start Game</Text>
-          </View>
-        </TouchableOpacity>
+        {roomInfo.host === currentEmail && 
+          <TouchableOpacity className="absolute" onPress={handleStartGame}>
+            <View className="bg-sky-500 p-3 rounded-md">
+              <Text className="font-semibold">Start Game</Text>
+            </View>
+          </TouchableOpacity>
+        } 
       <TouchableOpacity
         className="absolute top-[10%] right-[5%]"
         onPress={handleOutRoom}

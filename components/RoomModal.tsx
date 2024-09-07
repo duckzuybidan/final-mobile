@@ -9,7 +9,7 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, TextInput } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -28,55 +28,48 @@ export default function RoomModal({
     roomId: "",
     password: "",
   });
+  const [deckId, setDeckId] = useState<any>({});
   const handleCreateRoom = async () => {
-    if (formData.roomId.length === 0 || formData.password.length === 0) {
+    try {
+      if (formData.roomId.length === 0 || formData.password.length === 0) {
+        Toast.show({
+          type: "error",
+          text1: "Room ID and Password are required",
+        });
+        return;
+      }
+      const checked = await getDoc(doc(db, "rooms", formData.roomId));
+      if (checked.exists()) {
+        Toast.show({
+          type: "error",
+          text1: "Room ID already exists",
+        });
+        return;
+      }
+      const roomRef = collection(db, "rooms");
+      setDoc(doc(roomRef, formData.roomId), {
+        members: [email],
+        password: formData.password,
+        host: email,
+        deck_id: deckId,
+      });
+      const userRef = collection(db, "users");
+      updateDoc(doc(userRef, email), {
+        inRoomNo: formData.roomId,
+      });
+      router.push(`/room?id=${formData.roomId}`);
+      setFormData({ roomId: "", password: "" });
+      onClose(formData.roomId);
+    } catch (error) {
       Toast.show({
         type: "error",
-        text1: "Room ID and Password are required",
-      });
-      return;
-    }
-    const checked = await getDoc(doc(db, "rooms", formData.roomId));
-    if (checked.exists()) {
-      Toast.show({
-        type: "error",
-        text1: "Room ID already exists",
-      });
-      return;
-    }
-    const roomRef = collection(db, "rooms");
-    setDoc(doc(roomRef, formData.roomId), {
-      members: [email],
-      password: formData.password,
-      host: email,
-    });
-    const userRef = collection(db, "users");
-    updateDoc(doc(userRef, email), {
-      inRoomNo: formData.roomId,
-    });
-  
-
-    fetch("https://www.deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        return response.json();
+        text1: "Something went wrong",
+        text1Style: { fontSize: 16 },
       })
-      .then((data) => {
-        updateDoc(doc(roomRef, formData.roomId), {
-            deck_id:data
-          });
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-       
-    router.push(`/room?id=${formData.roomId}`);
-    setFormData({ roomId: "", password: "" });
-    onClose(formData.roomId);
+    }
   };
   const handleJoinRoom = async () => {
+    try {
     const checked = await getDoc(doc(db, "rooms", formData.roomId));
     if (!checked.exists()) {
       Toast.show({
@@ -103,7 +96,30 @@ export default function RoomModal({
     router.push(`/room?id=${formData.roomId}`);
     setFormData({ roomId: "", password: "" });
     onClose(formData.roomId);
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Something went wrong",
+        text1Style: { fontSize: 16 },
+      })
+    }
   };
+  useEffect(() => {
+    if(type === "join") return
+    fetch("https://www.deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setDeckId(data)
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  },[])
   if (!open) {
     return null;
   }

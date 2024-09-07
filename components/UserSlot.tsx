@@ -171,31 +171,16 @@ export default function UserSlot({
     }
     fetchUser()
   }, [userEmail])
-  useEffect(() => { 
-    const fetchPlayerData = async () => {
-      const roomDoc = await getDoc(doc(db, 'rooms', id as string));
-      const roomData = roomDoc.data();
-      if (!roomData) return;
-
-      const playerData = roomData.player.find((p: Player) => p.email === currentEmail);
-      if (playerData) {
-        setPlayer(playerData);
+  useEffect(() => {
+    onSnapshot(doc(db, 'rooms', id as string), (room) => {
+      if(room.data()?.player){
+        setPlayer(room.data()?.player.find((p: Player) => p.email === currentEmail));
       }
-    };
-     
-    const fetchOnboardCard = async () => {
-      const roomDoc = await getDoc(doc(db, 'rooms', id as string));
-      const roomData = roomDoc.data();
-      if (!roomData) return;
-
-      const onboardCard = roomData.onboardcard ;
-      if (onboardCard) {
-        setOnboardCard(onboardCard);
+      if(room.data()?.onboardcard){
+        setOnboardCard(room.data()?.onboardcard);
       }
-    }; 
-    fetchPlayerData();
-    fetchOnboardCard(); 
-  } );
+    })
+  }, []);
 
   const handleCardClick = (index: number) => {
     setSelectedCardIndices((prevSelectedIndices) => {
@@ -207,7 +192,7 @@ export default function UserSlot({
     });
   };
 
-  const handleSort = useCallback(async () => {
+  const handleSort = async () => {
     if (!player.hand.length || !id) return;
 
     const sortedCards = sortHand(player.hand);
@@ -216,7 +201,7 @@ export default function UserSlot({
     const roomData = roomDoc.data();
     if (!roomData) return;
 
-    const playerIndex = roomData.player.findIndex((p: Player) => p.email === userEmail);
+    const playerIndex = roomData.player.findIndex((p: Player) => p.email === currentEmail);
     if (playerIndex === -1) return;
 
     await updateDoc(doc(db, 'rooms', id as string), {
@@ -227,7 +212,7 @@ export default function UserSlot({
       ...prevPlayer,
       hand: sortedCards,
     }));
-  }, [player.hand, ]);
+  };
   useEffect(() => {
     if(no !== 1) return
     const fetchFriends = async () => {
