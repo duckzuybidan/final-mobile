@@ -341,23 +341,3 @@ export default function UserSlot({
     </>
   )
 }
-const styles = StyleSheet.create({
-  reactLogo: {
-    width: 90,
-    aspectRatio: 0.7,
-  },
-  selectedCardHighlight: {
-    borderColor: "blue",
-    borderWidth: 4,
-  },
-  
-  
-   
-  cardWrapper: {
-    position: "absolute", 
-    left: 0,
-  },
-
-   
-});
- 
