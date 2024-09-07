@@ -50,6 +50,7 @@ export default function UserSlot({
   const [friends, setFriends] = useState<User[]>([])
   const [isFriendsLoading, setIsFriendsLoading] = useState(false)
   const [onFriendList, setOnFriendList] = useState(false)
+  const [currentPlayerIdx, setCurrPlayerIdx] = useState(0)
   const position = () => {
     switch (no) {
       case 1:
@@ -175,6 +176,7 @@ export default function UserSlot({
     onSnapshot(doc(db, 'rooms', id as string), (room) => {
       if(room.data()?.player){
         setPlayer(room.data()?.player.find((p: Player) => p.email === currentEmail));
+        setCurrPlayerIdx(room.data()?.player.findIndex((p: Player) => p.email === currentEmail));
       }
       if(room.data()?.onboardcard){
         setOnboardCard(room.data()?.onboardcard);
@@ -195,23 +197,25 @@ export default function UserSlot({
   const handleSort = async () => {
     if (!player.hand.length || !id) return;
 
-    const sortedCards = sortHand(player.hand);
-
-    const roomDoc = await getDoc(doc(db, 'rooms', id as string));
-    const roomData = roomDoc.data();
-    if (!roomData) return;
-
-    const playerIndex = roomData.player.findIndex((p: Player) => p.email === currentEmail);
-    if (playerIndex === -1) return;
-
-    await updateDoc(doc(db, 'rooms', id as string), {
-      [`player.${playerIndex}.hand`]: sortedCards,
-    });
-
+    const sortedCards = sortHand(player.hand);  
     setPlayer((prevPlayer) => ({
       ...prevPlayer,
       hand: sortedCards,
     }));
+    const roomRef = doc(db, "rooms", id as string);
+    const room = await getDoc(roomRef);
+    const roomDataPlayers = room.data()?.player;
+    const newRoomDataPlayers = roomDataPlayers.map((p: Player) => {
+      if (p.email === currentEmail) {
+        return {
+          ...p,
+          hand: sortedCards,
+        };
+      }
+      return p;
+    })
+    updateDoc(roomRef, { player: newRoomDataPlayers });
+
   };
   useEffect(() => {
     if(no !== 1) return
