@@ -6,15 +6,23 @@ import AntDesign from '@expo/vector-icons/AntDesign'
 import Feather from '@expo/vector-icons/Feather'
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import { useLocalSearchParams } from 'expo-router'
-import { arrayRemove, collection, doc, getDoc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
-import { useCallback, useEffect, useState } from 'react'
-import { View, Text, Image, Pressable, StyleSheet, Button, TouchableOpacity } from 'react-native'
+import { arrayRemove, collection, doc, getDoc, getDocs, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { View, Text, Image, Pressable, StyleSheet, Button, TouchableOpacity, ScrollView } from 'react-native'
 import Toast from 'react-native-toast-message'
 import CustomConfirmModal from './CustomConfirmModal'
+import { LoadingIcon } from './LoadingIcon'
 enum Status {
   pending = 'pending',
   accepted = 'accepted',
   cancel = 'cancel',
+}
+type User = {
+  email: string,
+  name: string,
+  avatar: string,
+  coins: number,
+  friends: string[]
 }
 export default function UserSlot({
   no,
@@ -36,14 +44,12 @@ export default function UserSlot({
   const [onboardCard,setOnboardCard] = useState<Card[]>([]) 
   const [selectedCardIndices, setSelectedCardIndices] = useState<number[]>([]); 
   const { id } = useLocalSearchParams(); 
-  const [userData, setUserData] = useState<{
-        name: string,
-        avatar: string,
-        coins: number,
-        friends: string[],
-    }| null>(null)  
+  const [userData, setUserData] = useState<User| null>(null)  
   const [isPending, setIsPending] = useState(false)
   const [onModal, setOnModal] = useState(false)
+  const [friends, setFriends] = useState<User[]>([])
+  const [isFriendsLoading, setIsFriendsLoading] = useState(false)
+  const [onFriendList, setOnFriendList] = useState(false)
   const position = () => {
     switch (no) {
       case 1:
@@ -121,6 +127,50 @@ export default function UserSlot({
       })
     }
   }
+  
+  const AddIconStatus = () => {
+    if(no === 1) return 
+    if(userData?.friends.includes(currentEmail as string)) {
+      return (
+        <View>
+          <Feather name="user-check" size={20} color="green" />
+        </View>
+      )
+    }
+    if(isPending) {
+      return (
+        <TouchableOpacity onPress={handleCancel}>
+          <Feather name="user-x" size={20} color="white" />
+        </TouchableOpacity>
+      )
+    }
+    return (
+      <TouchableOpacity onPress={handleAddFriend}>
+        <AntDesign name="adduser" size={20} color="white" />
+      </TouchableOpacity>
+    )
+  }
+  const KickIcon = () => {
+    if(no === 1) return
+    if(host !== currentEmail) return
+    return (
+      <TouchableOpacity onPress={() => {
+        touchSound()
+        setOnModal(true)
+      }}>
+        <FontAwesome5 name="user-alt-slash" size={16} color="red" />
+      </TouchableOpacity>
+    )
+  }
+  useEffect(() => {
+    if(!userEmail) return
+    const fetchUser = async () => {
+      onSnapshot(doc(db, "users", userEmail), (doc) => {
+        setUserData(doc.data() as any)
+      })
+    }
+    fetchUser()
+  }, [userEmail])
   useEffect(() => { 
     const fetchPlayerData = async () => {
       const roomDoc = await getDoc(doc(db, 'rooms', id as string));
@@ -178,87 +228,93 @@ export default function UserSlot({
       hand: sortedCards,
     }));
   }, [player.hand, ]);
-  
-  const handlePlayCards = useCallback(async () => {
-    const roomDoc = await getDoc(doc(db, 'rooms', id as string));
-    const roomData = roomDoc.data(); 
-    const playedCards = selectedCardIndices.map((index) => player.hand[index]); 
-    if (!isValidPlay(playedCards, roomData?.onboardcards, true)) return; 
-  }, [player.hand ]);
-    
-  const AddIconStatus = () => {
-    if(no === 1) return 
-    if(userData?.friends.includes(currentEmail as string)) {
-      return (
-        <View>
-          <Feather name="user-check" size={20} color="green" />
-        </View>
-      )
-    }
-    if(isPending) {
-      return (
-        <TouchableOpacity onPress={handleCancel}>
-          <Feather name="user-x" size={20} color="white" />
-        </TouchableOpacity>
-      )
-    }
-    return (
-      <TouchableOpacity onPress={handleAddFriend}>
-        <AntDesign name="adduser" size={20} color="white" />
-      </TouchableOpacity>
-    )
-  }
-  const KickIcon = () => {
-    if(no === 1) return
-    if(host !== currentEmail) return
-    return (
-      <TouchableOpacity onPress={() => {
-        touchSound()
-        setOnModal(true)
-      }}>
-        <FontAwesome5 name="user-alt-slash" size={16} color="red" />
-      </TouchableOpacity>
-    )
-  }
   useEffect(() => {
-    if(!userEmail) return
-    const fetchUser = async () => {
-      onSnapshot(doc(db, "users", userEmail), (doc) => {
-        setUserData(doc.data() as any)
-      })
+    if(no !== 1) return
+    const fetchFriends = async () => {
+      setIsFriendsLoading(true)
+      try{
+        const userRef = collection(db, "users");
+        const querySnapshot = await getDocs(query(userRef, where("friends", "array-contains", currentEmail)));
+        const friends = querySnapshot.docs.map((res) => ({
+          email: res.id,
+          name: res.data().name,
+          avatar: res.data().avatar,
+          coins: res.data().coins,
+          friends: res.data().friends
+        }));
+        setFriends(friends)
+        setIsFriendsLoading(false)
+      }
+      catch(error) {
+        setIsFriendsLoading(false)
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Something went wrong',
+          text2Style: {fontSize: 16}
+        })
+      }
     }
-    fetchUser()
-  }, [userEmail])
+    fetchFriends()
+  }, [currentEmail])
   return (
     <>
     <CustomConfirmModal open={onModal} onClose={() => setOnModal(false)}  content={'Are you sure you want to kick this player?'} onConfirm={handleKick} />
     {no== 1 && (
       <View className='absolute w-screen h-screen'>
-        <View className='absolute bottom-[42%] left-[10%]'>
+        <View className='absolute top-[67%] left-[10%] w-full'>
           {player?.hand.map((card, index) => (
             <Pressable
               key={index}
               onPress={() => handleCardClick(index)}
-              style={[styles.cardWrapper, { left: (index * 70) / 2 }]}
+              style = {{position: "absolute", left: (index * 70)/2}}
             >
               <Image
                 source={{ uri: card.image }}
-                  style={[
-                  styles.reactLogo,
-                  selectedCardIndices.includes(index) &&
-                  styles.selectedCardHighlight,
-                  ]}
-                className='scale-[0.6]'
+                resizeMode='contain'
+                className={`w-[70px] h-[70px] ${selectedCardIndices.includes(index) ? 'translate-y-[-10px]' : 'translate-y-0'}`}
               />
             </Pressable>
             ))}
+            {player?.hand.length > 0 && 
+              <TouchableOpacity onPress={handleSort} className='absolute right-[20%]'>
+                <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
+                  <Text className='text-white font-semibold'>Sort</Text>
+                </View>
+              </TouchableOpacity>
+            }
         </View>
-        <TouchableOpacity onPress={handleSort} className='absolute right-[15%] bottom-[24%]'>
-          <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
-            <Text className='text-white font-semibold'>Sort</Text>
-          </View>
+        <TouchableOpacity className="absolute top-[20%] left-[5%]" onPress={() =>{
+          touchSound();
+          setOnFriendList(!onFriendList)
+        }}>
+          <AntDesign name="addusergroup" size={24} color="white" />
         </TouchableOpacity>
-      </View>)}
+        {onFriendList && (
+          <View className="absolute top-[20%] left-[10%] bg-white rounded-md p-3 z-10">
+            <Text className='text-md font-semibold w-full text-center'>Invite friends</Text>
+            <View className='w-full h-[1px] bg-black my-1'/>
+            <ScrollView showsVerticalScrollIndicator={false} className='space-y-3' style={{maxHeight: 200}}>
+            {isFriendsLoading && <LoadingIcon />}
+            {friends.length === 0 && !isFriendsLoading &&
+              <Text className='text-md font-semibold text-gray-600'>No friends</Text>
+            }
+            {friends.length > 0 && friends.map((user, index) => (
+              <View className='relative w-[220px] flex flex-row items-center space-x-3 bg-slate-100 p-2 rounded-md' key={index}>
+                <Image source={{uri: user.avatar}} className='w-[24px] h-[24px] rounded-full'/>
+                <Text className='text-md'>{user.name}</Text>
+                <TouchableOpacity className='absolute right-3' onPress={() => {
+                    touchSound()
+                  }}>
+                    <FontAwesome5 name="plus-square" size={20} color="black" />
+                  </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+          </View>
+        )}
+      </View>
+    )}
     <View className={`absolute ${position()}`}>
         {userEmail ? (
           <View className={`relative ${no === 1 && 'flex flex-row items-center space-x-2'}`}>
@@ -289,9 +345,6 @@ const styles = StyleSheet.create({
   reactLogo: {
     width: 90,
     aspectRatio: 0.7,
-    borderWidth: 0.1,
-    borderRadius: 10,
-    borderColor: "black",
   },
   selectedCardHighlight: {
     borderColor: "blue",

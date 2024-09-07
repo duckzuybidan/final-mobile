@@ -383,26 +383,26 @@ export default function Page() {
         }
         {mode === Mode.seeFriends &&
           <ScrollView showsVerticalScrollIndicator={false} className='space-y-3' style={{maxHeight: 200}}>
-          {isFriendsLoading && <LoadingIcon />}
-          {friends.length === 0 && !isFriendsLoading &&
-            <Text className='text-xl font-semibold text-gray-600'>No friends</Text>
-          }
-          {friends.length > 0 && friends.map((user, index) => (
-            <View className='relative w-[350px] flex flex-row items-center space-x-3 bg-slate-100 p-3 rounded-md' key={index}>
-              <Image source={{uri: user.avatar}} className='w-[24px] h-[24px] rounded-full'/>
-              <Text className='text-md'>{user.name}</Text>
-              <View className='absolute right-3'>
-                <TouchableOpacity onPress={() => {
-                  touchSound()
-                  setOnModal(true)
-                  setSelectedEmail(user.email)
-                }}>
-                  <AntDesign name="deleteuser" size={20} color="black" />
-                </TouchableOpacity>
+            {isFriendsLoading && <LoadingIcon />}
+            {friends.length === 0 && !isFriendsLoading &&
+              <Text className='text-xl font-semibold text-gray-600'>No friends</Text>
+            }
+            {friends.length > 0 && friends.map((user, index) => (
+              <View className='relative w-[350px] flex flex-row items-center space-x-3 bg-slate-100 p-3 rounded-md' key={index}>
+                <Image source={{uri: user.avatar}} className='w-[24px] h-[24px] rounded-full'/>
+                <Text className='text-md'>{user.name}</Text>
+                <View className='absolute right-3'>
+                  <TouchableOpacity onPress={() => {
+                    touchSound()
+                    setOnModal(true)
+                    setSelectedEmail(user.email)
+                  }}>
+                    <AntDesign name="deleteuser" size={20} color="black" />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          ))}
-        </ScrollView>
+            ))}
+          </ScrollView>
         }
       </View>
       <Toast />

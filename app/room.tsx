@@ -3,6 +3,7 @@ import { db } from "@/firebase";
 import { Card, Player } from "@/helper/game_logic";
 import { touchSound } from "@/utils/effects";
 import { useUser } from "@clerk/clerk-expo";
+import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -132,6 +133,7 @@ export default function Page() {
             <Text className="font-semibold">Password: {roomInfo.password}</Text>
           </View>
         )}
+        
         <TouchableOpacity className="absolute" onPress={handleStartGame}>
           <View className="bg-sky-500 p-3">
             <Text className="font-semibold">Start Game</Text>
