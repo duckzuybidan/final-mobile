@@ -197,8 +197,9 @@ export default function UserSlot({
       if(room.data()?.player){
         setPlayer(room.data()?.player.find((p: Player) => p.email === currentEmail));
       }
-      if(room.data()?.onboardcard){
-        setOnboardCard(room.data()?.onboardcard);
+        
+      if(room.data()?.onboardCard){
+        setOnboardCard(room.data()?.onboardCard);
       }
     })
   }, []);
@@ -210,6 +211,33 @@ export default function UserSlot({
         return [...prevSelectedIndices, index];
       }
     });
+  };
+  
+  
+   
+  const handleCardPlay = async () => {
+     //if(!isTurn()) return;
+    const playedCards = selectedCardIndices.map((index) => player.hand[index]);  
+    if(!isValidPlay(playedCards,onboardCard,false))return  
+    setSelectedCardIndices([]);  
+    const filteredHand = player.hand.filter((_, index) => !selectedCardIndices.includes(index));
+    const roomRef = doc(db, "rooms", id as string);
+    const room = await getDoc(roomRef);
+    updateDoc(roomRef, {
+      onboardCard: playedCards
+    }) 
+    
+    const roomDataPlayers = room.data()?.player;
+    const newRoomDataPlayers = roomDataPlayers.map((p: Player) => {
+      if (p.email === currentEmail) {
+        return {
+          ...p,
+          hand:filteredHand,
+        };
+      }
+      return p;
+    })
+    updateDoc(roomRef, { player: newRoomDataPlayers }); 
   };
 
   const handleSort = async () => {
@@ -290,7 +318,14 @@ export default function UserSlot({
                 </View>
               </TouchableOpacity>
             }
-        </View>
+             {selectedCardIndices.length > 0 && 
+              <TouchableOpacity onPress={handleCardPlay} className='absolute right-[20%]'>
+                <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
+                  <Text className='text-white font-semibold'>Play Card</Text>
+                </View>
+              </TouchableOpacity>
+            } 
+        </View> 
         <TouchableOpacity className="absolute top-[20%] left-[5%]" onPress={() =>{
           touchSound();
           setOnFriendList(!onFriendList)
