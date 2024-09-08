@@ -8,10 +8,12 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import { useLocalSearchParams } from 'expo-router'
 import { arrayRemove, collection, doc, getDoc, getDocs, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { View, Text, Image, Pressable, StyleSheet, Button, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, Image, Pressable, StyleSheet, Button, TouchableOpacity, ScrollView, TextInput } from 'react-native'
 import Toast from 'react-native-toast-message'
 import CustomConfirmModal from './CustomConfirmModal'
 import { LoadingIcon } from './LoadingIcon'
+import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 enum Status {
   pending = 'pending',
   accepted = 'accepted',
@@ -50,7 +52,9 @@ export default function UserSlot({
   const [friends, setFriends] = useState<User[]>([])
   const [isFriendsLoading, setIsFriendsLoading] = useState(false)
   const [onFriendList, setOnFriendList] = useState(false)
-  const [isSended, setIsSended] = useState(false)
+  const [isInvitationSended, setInvitationIsSended] = useState(false)
+  const [onChatBox, setOnChatBox] = useState(false)
+  const [messageText, setMessageText] = useState('')
   const position = () => {
     switch (no) {
       case 1:
@@ -129,8 +133,8 @@ export default function UserSlot({
     }
   }
   const handleInvite = async (toEmail: string) => {
-    setIsSended(true)
-    setTimeout(() => setIsSended(false), 5000)
+    setInvitationIsSended(true)
+    setTimeout(() => setInvitationIsSended(false), 5000)
     try{
     const invitationRef = collection(db, "invitations");
     setDoc(doc(invitationRef, `${currentEmail}-${toEmail}-${id}`), {
@@ -183,26 +187,6 @@ export default function UserSlot({
       </TouchableOpacity>
     )
   }
-  useEffect(() => {
-    if(!userEmail) return
-    const fetchUser = async () => {
-      onSnapshot(doc(db, "users", userEmail), (doc) => {
-        setUserData(doc.data() as any)
-      })
-    }
-    fetchUser()
-  }, [userEmail])
-  useEffect(() => {
-    onSnapshot(doc(db, 'rooms', id as string), (room) => {
-      if(room.data()?.player){
-        setPlayer(room.data()?.player.find((p: Player) => p.email === currentEmail));
-      }
-        
-      if(room.data()?.onboardCard){
-        setOnboardCard(room.data()?.onboardCard);
-      }
-    })
-  }, []);
   const handleCardClick = (index: number) => {
     setSelectedCardIndices((prevSelectedIndices) => {
       if (prevSelectedIndices.includes(index)) {
@@ -212,11 +196,8 @@ export default function UserSlot({
       }
     });
   };
-  
-  
-   
   const handleCardPlay = async () => {
-     //if(!isTurn()) return;
+    //if(!isTurn()) return;
     const playedCards = selectedCardIndices.map((index) => player.hand[index]);  
     if(!isValidPlay(playedCards,onboardCard,false))return  
     setSelectedCardIndices([]);  
@@ -239,7 +220,7 @@ export default function UserSlot({
     })
     updateDoc(roomRef, { player: newRoomDataPlayers }); 
   };
-
+  
   const handleSort = async () => {
     if (!player.hand.length || !id) return;
 
@@ -263,6 +244,16 @@ export default function UserSlot({
     updateDoc(roomRef, { player: newRoomDataPlayers });
 
   };
+  const handleSendMessage = async () => {
+    setMessageText('')
+    const messageRef = collection(db, "messages");
+    setDoc(doc(messageRef, `${currentEmail}-${id}-${Date.now().toString()}`), {
+      from: currentEmail,
+      toRoom: id,
+      createdAt: Date.now().toString(),
+      content: messageText
+    })
+  }
   useEffect(() => {
     if(no !== 1) return
     const fetchFriends = async () => {
@@ -292,6 +283,26 @@ export default function UserSlot({
     }
     fetchFriends()
   }, [currentEmail])
+  useEffect(() => {
+    if(!userEmail) return
+    const fetchUser = async () => {
+      onSnapshot(doc(db, "users", userEmail), (doc) => {
+        setUserData(doc.data() as any)
+      })
+    }
+    fetchUser()
+  }, [userEmail])
+  useEffect(() => {
+    onSnapshot(doc(db, 'rooms', id as string), (room) => {
+      if(room.data()?.player){
+        setPlayer(room.data()?.player.find((p: Player) => p.email === currentEmail));
+      }
+        
+      if(room.data()?.onboardCard){
+        setOnboardCard(room.data()?.onboardCard);
+      }
+    })
+  }, []);
   return (
     <>
     <CustomConfirmModal open={onModal} onClose={() => setOnModal(false)}  content={'Are you sure you want to kick this player?'} onConfirm={handleKick} />
@@ -311,20 +322,22 @@ export default function UserSlot({
               />
             </Pressable>
             ))}
+            <View className='absolute right-[20%] flex flex-col space-y-1'>
             {player?.hand.length > 0 && 
-              <TouchableOpacity onPress={handleSort} className='absolute right-[20%]'>
+              <TouchableOpacity onPress={handleSort}>
                 <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
                   <Text className='text-white font-semibold'>Sort</Text>
                 </View>
               </TouchableOpacity>
             }
              {selectedCardIndices.length > 0 && 
-              <TouchableOpacity onPress={handleCardPlay} className='absolute right-[20%]'>
+              <TouchableOpacity onPress={handleCardPlay}>
                 <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
                   <Text className='text-white font-semibold'>Play Card</Text>
                 </View>
               </TouchableOpacity>
             } 
+            </View>
         </View> 
         <TouchableOpacity className="absolute top-[20%] left-[5%]" onPress={() =>{
           touchSound();
@@ -345,7 +358,7 @@ export default function UserSlot({
               <View className='relative w-[220px] flex flex-row items-center space-x-3 bg-slate-100 p-2 rounded-md' key={index}>
                 <Image source={{uri: user.avatar}} className='w-[24px] h-[24px] rounded-full'/>
                 <Text className='text-md'>{user.name}</Text>
-                {isSended ? (
+                {isInvitationSended ? (
                   <View className='absolute right-3'>
                     <Feather name="check" size={20} color="green" />
                   </View>
@@ -362,6 +375,30 @@ export default function UserSlot({
           </ScrollView>
           </View>
         )}
+        <TouchableOpacity className='absolute bottom-[5%] left-[5%]' onPress={() => {
+          touchSound()
+          setOnChatBox(!onChatBox)
+        }}>
+          <Ionicons name="chatbox-ellipses-outline" size={24} color="white" />
+        </TouchableOpacity>
+        {onChatBox &&
+          <View className='absolute bottom-[5%] left-[10%] flex flex-col-reverse p-3 rounded-md bg-gray-500 z-10'>
+            <View className='flex flex-row space-x-1 items-center'>
+              <TextInput
+                className='w-[220px] p-1 bg-slate-100 rounded-md'
+                value={messageText}
+                onChangeText={(text) => setMessageText(text)}
+              />
+              <TouchableOpacity disabled={messageText === ''} onPress={() => {
+                touchSound()
+                handleSendMessage()
+              }}>
+                <MaterialCommunityIcons name="send" size={24} color="blue" />
+              </TouchableOpacity>
+            </View>
+            <View className='w-full h-[1px] bg-black my-1'/>
+          </View>
+        }
       </View>
     )}
     <View className={`absolute ${position()}`}>
