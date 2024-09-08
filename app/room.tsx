@@ -8,11 +8,15 @@ import Feather from "@expo/vector-icons/Feather";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   arrayRemove,
+  collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
+  query,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { View, Image, TouchableOpacity, Button, Text } from "react-native";
@@ -35,6 +39,10 @@ export default function Page() {
     if (room.data()?.host === currentEmail) {
       if (members.length === 1) {
         deleteDoc(doc(db, "rooms", id as string));
+        const invitations = await getDocs(query(collection(db, "invitations"), where("roomID", "==", id)));
+        invitations.forEach((invitation) => {
+          deleteDoc(doc(db, "invitations", `${invitation.data().from}-${invitation.data().to}-${invitation.data().roomID}`));
+        })
       } else {
         updateDoc(doc(db, "rooms", id as string), {
           members: arrayRemove(currentEmail as string),
