@@ -31,6 +31,7 @@ export default function Page() {
     password: "",
     host: "",
     deck_id: "",
+    preRoundWinner: "",  
   })
   const [onInfo, setOnInfo] = useState(false);
   const handleOutRoom = async () => {
@@ -91,7 +92,10 @@ export default function Page() {
           });
         } 
         let turn = 0
-        if(members.length === 4){ 
+        if(roomInfo.preRoundWinner !== undefined){
+            turn = players.findIndex((player: Player) => player.email === roomInfo.preRoundWinner); 
+        } 
+        else if(members.length === 4){ 
             turn = cardSegments.findIndex(segment =>
             segment.some((card: { code: string; })  => card.code === "3S" )
           );
@@ -120,6 +124,7 @@ export default function Page() {
           password: room.data()?.password,
           host: room.data()?.host,
           deck_id: room.data()?.deck_id.deck_id,
+          preRoundWinner:  room.data()?.preRoundWinner
         })
       });
     };

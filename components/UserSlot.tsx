@@ -37,6 +37,7 @@ export default function UserSlot({
   }){
   const {user} = useUser()
   const currentEmail = user?.emailAddresses[0].emailAddress
+  const[gameState,setgGameState] = useState<boolean>(false) 
   const [player, setPlayer] = useState<Player>({
     email: '' , 
     hand:  [], 
@@ -197,13 +198,25 @@ export default function UserSlot({
     });
   };
  
-  
+  const checkEndGame = () => { 
+    if (player.hand.length !==0 || !gameState) return 
+    const roomRef = doc(db, "rooms", id as string); 
+    updateDoc(roomRef, {
+      preRoundWinner : currentEmail,
+      onGameState : false 
+    }) 
+  };  
+  checkEndGame();
+   
   const isTurn = async () => {
     const roomRef = doc(db, "rooms", id as string);
     const room = await getDoc(roomRef);
     const turn = room.data()?.turn;
-    return (room.data()?.player[turn].email === currentEmail) 
+    if (room.data()?.player[turn].email === currentEmail) {
+       return true
+    }return false
   };
+   
   const  updateTurn = async () => {
     const roomRef = doc(db, "rooms", id as string);
     const room = await getDoc(roomRef);
@@ -216,17 +229,16 @@ export default function UserSlot({
   };
       
   const handleCardPlay = async () => {
-    if(!isTurn()) return; 
+    if( await isTurn() === false) return;  
     const playedCards = selectedCardIndices.map((index) => player.hand[index]);  
-    if(!isValidPlay(playedCards,onboardCard,false))return  
+    if(!isValidPlay(playedCards,onboardCard,true))return  
     setSelectedCardIndices([]);  
     const filteredHand = player.hand.filter((_, index) => !selectedCardIndices.includes(index));
     const roomRef = doc(db, "rooms", id as string);
     const room = await getDoc(roomRef);
     updateDoc(roomRef, {
       onboardCard: playedCards
-    }) 
-    
+    })  
     const roomDataPlayers = room.data()?.player;
     const newRoomDataPlayers = roomDataPlayers.map((p: Player) => {
       if (p.email === currentEmail) {
@@ -261,8 +273,7 @@ export default function UserSlot({
       }
       return p;
     })
-    updateDoc(roomRef, { player: newRoomDataPlayers });
-
+    updateDoc(roomRef, { player: newRoomDataPlayers }); 
   };
   const handleSendMessage = async () => {
     setMessageText('')
@@ -312,6 +323,7 @@ export default function UserSlot({
     }
     fetchUser()
   }, [userEmail])
+ 
   useEffect(() => {
     onSnapshot(doc(db, 'rooms', id as string), (room) => {
       if(room.data()?.player){
@@ -320,8 +332,12 @@ export default function UserSlot({
         
       if(room.data()?.onboardCard){
         setOnboardCard(room.data()?.onboardCard);
-      }
-    })
+      } 
+        
+      if(room.data()?.onGameState){
+        setgGameState(room.data()?.onGameState);
+      }  
+    })  
   }, []);
   return (
     <>
