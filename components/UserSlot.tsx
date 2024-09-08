@@ -137,7 +137,7 @@ export default function UserSlot({
       from: currentEmail,
       to: toEmail,
       roomID: id,
-      createdAt: Date.now().toLocaleString()
+      createdAt: Date.now().toString()
     }, { merge: true });
     } catch(error) {
       Toast.show({

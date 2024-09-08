@@ -85,6 +85,13 @@ export default function RoomModal({
       });
       return;
     }
+    if(checked.data()?.members.length >= 4) {
+      Toast.show({
+        type: "error",
+        text1: "Room is full",
+      });
+      return;
+    }
     const roomRef = doc(db, "rooms", formData.roomId);
     updateDoc(roomRef, {
       members: arrayUnion(email),

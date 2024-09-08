@@ -1,11 +1,11 @@
 import { useAuth, useClerk, useOAuth } from "@clerk/clerk-expo";
-import { Image, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SignedIn, SignedOut, useUser } from '@clerk/clerk-expo'
 import { touchSound } from "@/utils/effects";
 import * as Linking from 'expo-linking';
 import { useEffect, useState } from "react";
 import {db} from '@/firebase'
-import { collection, doc, getDoc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
+import { arrayUnion, collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { LoadingIcon } from "@/components/LoadingIcon";
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -15,12 +15,20 @@ import CustomConfirmModal from "@/components/CustomConfirmModal";
 import CustomAds from "@/components/CustomAds";
 import RoomModal from "@/components/RoomModal";
 import { useNavigationState } from "@react-navigation/native";
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Toast from "react-native-toast-message";
 enum Strategy {
   Google = 'oauth_google',
 }
 type RoomModal = {
   open: boolean,
   type: 'create' | 'join'
+}
+type Invitation = {
+  from: string,
+  to: string,
+  createdAt: string,
+  roomID: string
 }
 export default function Page() {
   const routeName = useNavigationState(state => state.routes[state.index].name);
@@ -39,6 +47,8 @@ export default function Page() {
     type: 'create'
   })
   const [inRoomNo, setInRoomNo] = useState<string | null>(null)
+  const [invitations, setInvitations] = useState<Invitation[]>([])
+  const [onInvitation, setOnInvitation] = useState(false)
   const onSelectAuth = async (strategy: Strategy) => {
     const selectedAuth = {
       [Strategy.Google]: googleAuth,
@@ -64,10 +74,17 @@ export default function Page() {
    touchSound();
    setOnMenu(!onMenu)
  }
+ const handleInvitation = () => {
+   touchSound();
+   setOnInvitation(!onInvitation)
+ }
+
  const handleSignOut = () => {
   touchSound();
   setCoins(null)
   setInRoomNo(null)
+  setOnMenu(false)
+  setOnInvitation(false)
   signOut(session?.id as any);
  }
  const handleWatchAd = () => {
@@ -82,30 +99,93 @@ export default function Page() {
     });
    }
  }
+ const handleDenyInvitation = (invitation: Invitation) => {
+  touchSound();
+  setOnInvitation(false)
+  setInvitations((invitations as Invitation[]).filter((item) => item !== invitation))
+  deleteDoc(doc(db, "invitations", `${invitation.from}-${invitation.to}-${invitation.roomID}`));
+ }
+ const handleAcceptInvitation = async (invitation: Invitation) => {
+  touchSound();
+  const userRef = collection(db, "users");
+  const userData = await getDoc(doc(userRef, user?.emailAddresses[0].emailAddress!));
+  if(userData.data()?.inRoomNo !== "0000000") {
+    Toast.show({
+      type: "error",
+      text1: "You are already in a room",
+    });
+    return;
+  }
+  setOnInvitation(false)
+  setInvitations((invitations as Invitation[]).filter((item) => item !== invitation))
+  deleteDoc(doc(db, "invitations", `${invitation.from}-${invitation.to}-${invitation.roomID}`));
+  try{
+    const room = await getDoc(doc(db, "rooms", invitation.roomID));
+    if (!room.exists()) {
+      Toast.show({
+        type: "error",
+        text1: "Room ID does not exist",
+      });
+      return;
+    }
+    if(room.data()?.members.length >= 4) {
+      Toast.show({
+        type: "error",
+        text1: "Room is full",
+      });
+      return;
+    }
+    const roomRef = doc(db, "rooms", invitation.roomID);
+    updateDoc(roomRef, {
+      members: arrayUnion(user?.emailAddresses[0].emailAddress!),
+    });
+    
+    updateDoc(doc(userRef, user?.emailAddresses[0].emailAddress!), {
+      inRoomNo: invitation.roomID,
+    });
+    router.push(`/room?id=${invitation.roomID}`);
+  } catch(error){
+    Toast.show({
+      type: "error",
+      text1: "Something went wrong",
+      text1Style: { fontSize: 16 },
+    });
+  }
+  
+  
+ }
  useEffect(() => {
   const putUserToDB = async () => {
     if(isSignedIn){
       setIsLoading(false)
       const checked = await getDoc(doc(db, "users", user?.emailAddresses[0].emailAddress!));
-          if(checked.exists()){
-            setCoins(checked.data().coins)
-            onSnapshot(doc(db, "users", user?.emailAddresses[0].emailAddress!), (doc) => {
-              setInRoomNo(doc.data()?.inRoomNo)
-            })
-            return
-          }
-          const userRef = collection(db, "users");
-          await setDoc(doc(userRef, user?.emailAddresses[0].emailAddress!), {
-            name: user?.fullName,
-            coins: 500,
-            friends: [],
-            avatar: user?.imageUrl,
-            inRoomNo: "0000000"
-          }, { merge: true });
+      if(checked.exists()){
+        setCoins(checked.data().coins)
+        onSnapshot(doc(db, "users", user?.emailAddresses[0].emailAddress!), (doc) => {
+          setInRoomNo(doc.data()?.inRoomNo)
+        })
+        return
+      }
+      const userRef = collection(db, "users");
+      await setDoc(doc(userRef, user?.emailAddresses[0].emailAddress!), {
+        name: user?.fullName,
+        coins: 500,
+        friends: [],
+        avatar: user?.imageUrl,
+        inRoomNo: "0000000"
+      }, { merge: true });
     }
   }
   putUserToDB()
  }, [isSignedIn])
+ useEffect(() => {
+   if(!user?.emailAddresses[0].emailAddress) return
+   const invitationRef = collection(db, "invitations")
+   onSnapshot(query(invitationRef, where("to", "==", user?.emailAddresses[0].emailAddress)), (querySnapshot) => {
+     setInvitations(querySnapshot.docs.map((doc) => doc.data()) as Invitation[])
+   })
+ }, [user?.emailAddresses[0].emailAddress])
+
   return (
   <>
     <RoomModal 
@@ -133,7 +213,8 @@ export default function Page() {
           <TouchableOpacity className="absolute top-[10%] right-[5%]" onPress={handleMenu}>
             <Feather name="menu" size={25} color="white"/>
           </TouchableOpacity>
-          {onMenu && <View className="bg-slate-100 absolute top-[17%] right-[5%] p-2 rounded-lg space-y-2">
+          {onMenu && 
+          <View className="bg-slate-100 absolute top-[17%] right-[5%] p-2 rounded-lg space-y-2">
             <TouchableOpacity 
               onPress={() => {
                 touchSound();
@@ -163,6 +244,33 @@ export default function Page() {
               </View>
             </TouchableOpacity>
           </View>}
+          <TouchableOpacity className="absolute top-[10%] right-[15%]" onPress={handleInvitation}>
+            <MaterialCommunityIcons name="email-newsletter" size={25} color="white" />
+          </TouchableOpacity>
+          {onInvitation &&
+          <View className="bg-slate-100 absolute top-[17%] right-[15%] p-2 rounded-lg space-y-2 z-10">
+            {invitations?.length === 0 && <Text className="text-black font-semibold">No invitation</Text>}
+            <ScrollView showsVerticalScrollIndicator={false} className='space-y-2' style={{maxHeight: 200}}>
+            {invitations?.map((invitation, index) => (
+              <View key={index} className="bg-slate-300 p-2 rounded-md flex flex-col space-y-1"> 
+                <Text className="text-[12px]">{invitation.from} invite you to join room {invitation.roomID}</Text>
+                <View className="flex flex-row space-x-2 justify-end">
+                  <TouchableOpacity onPress={() => handleDenyInvitation(invitation)}>
+                    <View className="bg-red-500 rounded-md p-1">
+                      <Text className="font-semibold text-white">Deny</Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleAcceptInvitation(invitation)}>
+                    <View className="bg-green-500 rounded-md p-1">
+                      <Text className="font-semibold text-black">Accept</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+            </ScrollView>
+          </View>
+          }
           <View className="absolute top-[15%] left-[5%] flex flex-row space-x-2 items-center">
             {coins ? (
               <Text className="text-white font-semibold text-2xl">{coins}</Text> 
@@ -210,7 +318,6 @@ export default function Page() {
             ))}
           </>
         </View>
-        
       </SignedIn>
       <SignedOut>
         {isLoading && <LoadingIcon />}
@@ -222,6 +329,7 @@ export default function Page() {
           <Text className="text-white text-xl font-semibold">Continue with Google</Text>
         </TouchableOpacity>}
       </SignedOut>
+      <Toast position="bottom"/>
     </View>
     </>
   );
