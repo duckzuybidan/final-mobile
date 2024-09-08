@@ -99,7 +99,8 @@ export default function Page() {
         updateDoc(doc(db, "rooms", id as string), {
           player : players, 
           onboardCard:[],
-          turn:turn    
+          turn:turn,
+          onGameState: true     
         });    
       })
       .catch((error) => {

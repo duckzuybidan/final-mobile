@@ -196,8 +196,27 @@ export default function UserSlot({
       }
     });
   };
+ 
+  
+  const isTurn = async () => {
+    const roomRef = doc(db, "rooms", id as string);
+    const room = await getDoc(roomRef);
+    const turn = room.data()?.turn;
+    return (room.data()?.player[turn].email === currentEmail) 
+  };
+  const  updateTurn = async () => {
+    const roomRef = doc(db, "rooms", id as string);
+    const room = await getDoc(roomRef);
+    let turn = room.data()?.turn;
+    turn++; 
+    if(turn >= room.data()?.player.length) turn = 0; 
+    updateDoc(roomRef, {
+      turn: turn
+    })  
+  };
+      
   const handleCardPlay = async () => {
-    //if(!isTurn()) return;
+    if(!isTurn()) return; 
     const playedCards = selectedCardIndices.map((index) => player.hand[index]);  
     if(!isValidPlay(playedCards,onboardCard,false))return  
     setSelectedCardIndices([]);  
@@ -219,6 +238,7 @@ export default function UserSlot({
       return p;
     })
     updateDoc(roomRef, { player: newRoomDataPlayers }); 
+    updateTurn() 
   };
   
   const handleSort = async () => {

@@ -52,6 +52,7 @@ export default function RoomModal({
         password: formData.password,
         host: email,
         deck_id: deckId,
+        onGameState: false 
       });
       const userRef = collection(db, "users");
       updateDoc(doc(userRef, email), {
