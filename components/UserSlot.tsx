@@ -26,6 +26,12 @@ type User = {
   coins: number,
   friends: string[]
 }
+type Message = {
+  from: User,
+  toRoom: string,
+  createdAt: string,
+  content: string
+}
 export default function UserSlot({
   no,
   userEmail,
@@ -56,6 +62,8 @@ export default function UserSlot({
   const [isInvitationSended, setInvitationIsSended] = useState(false)
   const [onChatBox, setOnChatBox] = useState(false)
   const [messageText, setMessageText] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const scrollRef = useRef<ScrollView>(null)
   const position = () => {
     switch (no) {
       case 1:
@@ -276,14 +284,37 @@ export default function UserSlot({
     updateDoc(roomRef, { player: newRoomDataPlayers }); 
   };
   const handleSendMessage = async () => {
+    if(!messageText) return
+    const timestamp = Date.now().toString();
+    if (scrollRef.current) {
+      scrollRef.current.scrollToEnd({ animated: true });
+    }
     setMessageText('')
+    setMessages([...messages as Message[], {
+      from: userData as User,
+      content: messageText,
+      createdAt: timestamp,
+      toRoom: id
+     } as Message]);
     const messageRef = collection(db, "messages");
-    setDoc(doc(messageRef, `${currentEmail}-${id}-${Date.now().toString()}`), {
+    setDoc(doc(messageRef, `${currentEmail}-${id}-${timestamp}`), {
       from: currentEmail,
       toRoom: id,
-      createdAt: Date.now().toString(),
+      createdAt: timestamp,
       content: messageText
     })
+  }
+  const convertDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const options = {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric'
+    };
+    return date.toLocaleDateString('en-US', options as any);
   }
   useEffect(() => {
     if(no !== 1) return
@@ -318,7 +349,13 @@ export default function UserSlot({
     if(!userEmail) return
     const fetchUser = async () => {
       onSnapshot(doc(db, "users", userEmail), (doc) => {
-        setUserData(doc.data() as any)
+        setUserData({
+          email: doc.id,
+          name: doc.data()?.name,
+          avatar: doc.data()?.avatar,
+          coins: doc.data()?.coins,
+          friends: doc.data()?.friends
+        })
       })
     }
     fetchUser()
@@ -338,7 +375,32 @@ export default function UserSlot({
         setgGameState(room.data()?.onGameState);
       }  
     })  
+    onSnapshot(query(collection(db, "messages"), where("toRoom", "==", id)), async (snapshot) => {
+      const msgPromises = snapshot.docs.map(async (d) => {
+        const fromUser = await getDoc(doc(db, 'users', d.data().from as string));
+        return {
+          from: {
+            email: d.data().from,
+            name: fromUser.data()?.name,
+            avatar: fromUser.data()?.avatar,
+            coins: fromUser.data()?.coins,
+            friends: fromUser.data()?.friends
+          },
+          content: d.data().content,
+          createdAt: d.data().createdAt,
+          toRoom: d.data().toRoom
+        }
+      })
+      const messages = await Promise.all(msgPromises)
+      setMessages(messages.sort((a, b) => Number(a.createdAt) - Number(b.createdAt)) as Message[])
+      
+    })
   }, []);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollToEnd({ animated: true });
+    }
+  }, [onChatBox])
   return (
     <>
     <CustomConfirmModal open={onModal} onClose={() => setOnModal(false)}  content={'Are you sure you want to kick this player?'} onConfirm={handleKick} />
@@ -418,21 +480,29 @@ export default function UserSlot({
           <Ionicons name="chatbox-ellipses-outline" size={24} color="white" />
         </TouchableOpacity>
         {onChatBox &&
-          <View className='absolute bottom-[5%] left-[10%] flex flex-col-reverse p-3 rounded-md bg-gray-500 z-10'>
+          <View className='absolute bottom-[5%] left-[10%] flex flex-col-reverse p-3 rounded-md bg-gray-100 z-10'>
             <View className='flex flex-row space-x-1 items-center'>
               <TextInput
-                className='w-[220px] p-1 bg-slate-100 rounded-md'
+                className='w-[220px] p-1 bg-slate-300 rounded-md'
                 value={messageText}
                 onChangeText={(text) => setMessageText(text)}
               />
-              <TouchableOpacity disabled={messageText === ''} onPress={() => {
-                touchSound()
-                handleSendMessage()
-              }}>
+              <TouchableOpacity onPress={handleSendMessage}>
                 <MaterialCommunityIcons name="send" size={24} color="blue" />
               </TouchableOpacity>
             </View>
             <View className='w-full h-[1px] bg-black my-1'/>
+            <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} className='space-y-3' style={{maxHeight: 150}}>
+              {messages.map((message, index) => (
+                <View className={`flex flex-row space-x-3 items-center ${message.from.email === currentEmail ? 'justify-end' : ''}`} key={index}>
+                  {message.from.email !== currentEmail && <Image source={{uri: message.from.avatar}} className='w-[24px] h-[24px] rounded-full' />}
+                  <View className='p-2 bg-slate-300 rounded-md'>
+                    <Text className='text-md'>{message.content}</Text>
+                    <Text className='text-[6px] text-gray-500'>{convertDate(parseInt(message.createdAt))}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
           </View>
         }
       </View>

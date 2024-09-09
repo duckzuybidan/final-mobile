@@ -255,7 +255,12 @@ export default function Page() {
             </TouchableOpacity>
           </View>}
           <TouchableOpacity className="absolute top-[10%] right-[15%]" onPress={handleInvitation}>
+            <>
             <MaterialCommunityIcons name="email-newsletter" size={25} color="white" />
+            <View className="w-[10px] h-[10px] rounded-full bg-red-500 absolute bottom-0 right-0">
+              <Text className="text-white text-[8px] text-center">{invitations?.length}</Text>
+            </View>
+            </>
           </TouchableOpacity>
           {onInvitation &&
           <View className="bg-slate-100 absolute top-[17%] right-[15%] p-2 rounded-lg space-y-2 z-10">
