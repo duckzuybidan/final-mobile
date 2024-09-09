@@ -27,10 +27,11 @@ type User = {
   friends: string[]
 }
 type Message = {
-  from: User,
+  fromEmail: string,
+  fromAvatar: string,
   toRoom: string,
   createdAt: string,
-  content: string
+  content: string,
 }
 export default function UserSlot({
   no,
@@ -291,14 +292,16 @@ export default function UserSlot({
     }
     setMessageText('')
     setMessages([...messages as Message[], {
-      from: userData as User,
-      content: messageText,
+      fromEmail: currentEmail,
+      fromAvatar: userData?.avatar,
+      toRoom: id,
       createdAt: timestamp,
-      toRoom: id
+      content: messageText
      } as Message]);
     const messageRef = collection(db, "messages");
     setDoc(doc(messageRef, `${currentEmail}-${id}-${timestamp}`), {
-      from: currentEmail,
+      fromEmail: currentEmail,
+      fromAvatar: userData?.avatar,
       toRoom: id,
       createdAt: timestamp,
       content: messageText
@@ -349,13 +352,7 @@ export default function UserSlot({
     if(!userEmail) return
     const fetchUser = async () => {
       onSnapshot(doc(db, "users", userEmail), (doc) => {
-        setUserData({
-          email: doc.id,
-          name: doc.data()?.name,
-          avatar: doc.data()?.avatar,
-          coins: doc.data()?.coins,
-          friends: doc.data()?.friends
-        })
+        setUserData(doc.data() as any)
       })
     }
     fetchUser()
@@ -376,23 +373,10 @@ export default function UserSlot({
       }  
     })  
     onSnapshot(query(collection(db, "messages"), where("toRoom", "==", id)), async (snapshot) => {
-      const msgPromises = snapshot.docs.map(async (d) => {
-        const fromUser = await getDoc(doc(db, 'users', d.data().from as string));
-        return {
-          from: {
-            email: d.data().from,
-            name: fromUser.data()?.name,
-            avatar: fromUser.data()?.avatar,
-            coins: fromUser.data()?.coins,
-            friends: fromUser.data()?.friends
-          },
-          content: d.data().content,
-          createdAt: d.data().createdAt,
-          toRoom: d.data().toRoom
-        }
-      })
-      const messages = await Promise.all(msgPromises)
-      setMessages(messages.sort((a, b) => Number(a.createdAt) - Number(b.createdAt)) as Message[])
+      setMessages(
+        snapshot.docs.map((doc) => doc.data() as Message)
+        .sort((a, b) => Number(a.createdAt) - Number(b.createdAt))
+      );
       
     })
   }, []);
@@ -494,8 +478,8 @@ export default function UserSlot({
             <View className='w-full h-[1px] bg-black my-1'/>
             <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} className='space-y-3' style={{maxHeight: 150}}>
               {messages.map((message, index) => (
-                <View className={`flex flex-row space-x-3 items-center ${message.from.email === currentEmail ? 'justify-end' : ''}`} key={index}>
-                  {message.from.email !== currentEmail && <Image source={{uri: message.from.avatar}} className='w-[24px] h-[24px] rounded-full' />}
+                <View className={`flex flex-row space-x-3 items-center ${message.fromEmail === currentEmail ? 'justify-end' : ''}`} key={index}>
+                  {message.fromEmail !== currentEmail && <Image source={{uri: message.fromAvatar}} className='w-[24px] h-[24px] rounded-full' />}
                   <View className='p-2 bg-slate-300 rounded-md'>
                     <Text className='text-md'>{message.content}</Text>
                     <Text className='text-[6px] text-gray-500'>{convertDate(parseInt(message.createdAt))}</Text>
