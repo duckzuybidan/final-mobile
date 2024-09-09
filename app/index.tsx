@@ -151,9 +151,19 @@ export default function Page() {
       text1Style: { fontSize: 16 },
     });
   }
-  
-  
- }
+}
+  const convertDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const options = {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric'
+    };
+    return date.toLocaleDateString('en-US', options as any);
+  }
  useEffect(() => {
   const putUserToDB = async () => {
     if(isSignedIn){
@@ -252,9 +262,10 @@ export default function Page() {
             {invitations?.length === 0 && <Text className="text-black font-semibold">No invitation</Text>}
             <ScrollView showsVerticalScrollIndicator={false} className='space-y-2' style={{maxHeight: 200}}>
             {invitations?.map((invitation, index) => (
-              <View key={index} className="bg-slate-300 p-2 rounded-md flex flex-col space-y-1"> 
+              <View key={index} className="bg-slate-300 p-2 rounded-md flex flex-col space-y-1">
+                <Text className="w-full text-[8px] text-slate-700 text-right">{convertDate(parseInt(invitation.createdAt))}</Text>
                 <Text className="text-[12px]">{invitation.from} invite you to join room {invitation.roomID}</Text>
-                <View className="flex flex-row space-x-2 justify-end">
+                <View className="flex flex-row space-x-2 justify-end items-center">
                   <TouchableOpacity onPress={() => handleDenyInvitation(invitation)}>
                     <View className="bg-red-500 rounded-md p-1">
                       <Text className="font-semibold text-white">Deny</Text>
