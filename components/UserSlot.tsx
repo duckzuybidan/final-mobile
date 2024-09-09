@@ -235,8 +235,32 @@ export default function UserSlot({
     updateDoc(roomRef, {
       turn: turn
     })  
+    if (room.data()?.player[turn].isPass === true) {
+      updateTurn();
+      return;
+    } 
+    const passCount = room.data()?.players.filter((player: { isPass: boolean }) => player.isPass === true).length; //maybe unefine?
+    if(passCount === room.data()?.player.length - 1){ 
+      room.data()?.player.forEach((_: any, index: number) => {
+        updateDoc(roomRef, {
+          [`player.${index}.isPass`]: false
+        })  
+      }); 
+      //  update next turn player muon play cai j cx dc 
+    } 
   };
-      
+  
+  const  passTurn = async () => {
+    if( await isTurn() === false) return;  
+    const roomRef = doc(db, "rooms", id as string);
+    const room = await getDoc(roomRef);
+    let turn = room.data()?.turn;
+    updateDoc(roomRef, {
+      [`player.${turn}.isPass`]: true
+    })  
+    updateTurn();
+  }; 
+   
   const handleCardPlay = async () => {
     if( await isTurn() === false) return;  
     const playedCards = selectedCardIndices.map((index) => player.hand[index]);  
@@ -273,7 +297,7 @@ export default function UserSlot({
     const roomRef = doc(db, "rooms", id as string);
     const room = await getDoc(roomRef);
     const roomDataPlayers = room.data()?.player;
-    const newRoomDataPlayers = roomDataPlayers.map((p: Player) => {
+    const newRoomDataPlayers = roomDataPlayers.map((p: Player) => {// 2 player sort cung luc -> bug
       if (p.email === currentEmail) {
         return {
           ...p,
