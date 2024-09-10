@@ -134,7 +134,7 @@ export default function Page() {
               room.data()?.members.slice(index).concat(room.data()?.members.slice(0, index))
             );
           }
-          if(index === -1 && router.canGoBack()) {
+          if(index === -1) {
             router.back();
           }
           setRoomInfo({

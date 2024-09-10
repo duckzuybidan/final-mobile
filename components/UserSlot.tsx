@@ -385,7 +385,10 @@ export default function UserSlot({
   useEffect(() => {
     onSnapshot(doc(db, 'rooms', id as string), (room) => {
       if(room.data()?.player){
-        setPlayer(room.data()?.player.find((p: Player) => p.email === currentEmail));
+        const player = room.data()?.player.find((p: Player) => p.email === currentEmail);
+        if(player){
+          setPlayer(player);
+        }
       }
         
       if(room.data()?.onboardCard){
