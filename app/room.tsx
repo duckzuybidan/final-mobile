@@ -117,9 +117,14 @@ export default function Page() {
     const fetchRoom = () => {
       onSnapshot(doc(db, "rooms", id as string), (room) => {
         const index = room.data()?.members.indexOf(currentEmail);
-        setMembers(
-          room.data()?.members.slice(index).concat(room.data()?.members.slice(0, index))
-        );
+        if(index !== -1){
+          setMembers(
+            room.data()?.members.slice(index).concat(room.data()?.members.slice(0, index))
+          );
+        }
+        if(index === -1){
+          router.back();
+        }
         setRoomInfo({
           password: room.data()?.password,
           host: room.data()?.host,
