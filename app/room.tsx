@@ -35,30 +35,36 @@ export default function Page() {
   })
   const [onInfo, setOnInfo] = useState(false);
   const handleOutRoom = async () => {
-    touchSound();
-    const room = await getDoc(doc(db, "rooms", id as string));
-    if (room.data()?.host === currentEmail) {
-      if (members.length === 1) {
-        deleteDoc(doc(db, "rooms", id as string));
-        const invitations = await getDocs(query(collection(db, "invitations"), where("roomID", "==", id)));
-        invitations.forEach((invitation) => {
-          deleteDoc(doc(db, "invitations", `${invitation.data().from}-${invitation.data().to}-${invitation.data().roomID}`));
-        })
+    try{
+      touchSound();
+      const room = await getDoc(doc(db, "rooms", id as string));
+      if (room.data()?.host === currentEmail) {
+        if (members.length === 1) {
+          deleteDoc(doc(db, "rooms", id as string));
+          const invitations = await getDocs(query(collection(db, "invitations"), where("roomID", "==", id)));
+          invitations.forEach((invitation) => {
+            deleteDoc(doc(db, "invitations", `${invitation.data().from}-${invitation.data().to}-${invitation.data().roomID}`));
+          })
+        } else {
+          updateDoc(doc(db, "rooms", id as string), {
+            members: arrayRemove(currentEmail as string),
+            host: members[1],
+          });
+        }
       } else {
         updateDoc(doc(db, "rooms", id as string), {
           members: arrayRemove(currentEmail as string),
-          host: members[1],
         });
       }
-    } else {
-      updateDoc(doc(db, "rooms", id as string), {
-        members: arrayRemove(currentEmail as string),
+      updateDoc(doc(db, "users", currentEmail as string), {
+        inRoomNo: "0000000",
       });
-    }
-    updateDoc(doc(db, "users", currentEmail as string), {
-      inRoomNo: "0000000",
-    });
-    router.back();
+    } catch(error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Something went wrong',
+        text1Style: { fontSize: 16 },
+    })}
   };
 
   const handleStartGame = async () => {
@@ -122,7 +128,7 @@ export default function Page() {
             room.data()?.members.slice(index).concat(room.data()?.members.slice(0, index))
           );
         }
-        if(index === -1){
+        if(index === -1 && router.canGoBack()) {
           router.back();
         }
         setRoomInfo({
