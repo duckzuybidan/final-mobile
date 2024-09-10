@@ -40,10 +40,15 @@ export default function Page() {
       const room = await getDoc(doc(db, "rooms", id as string));
       if (room.data()?.host === currentEmail) {
         if (members.length === 1) {
+          router.back();
           deleteDoc(doc(db, "rooms", id as string));
           const invitations = await getDocs(query(collection(db, "invitations"), where("roomID", "==", id)));
           invitations.forEach((invitation) => {
-            deleteDoc(doc(db, "invitations", `${invitation.data().from}-${invitation.data().to}-${invitation.data().roomID}`));
+            deleteDoc(doc(db, "invitations", invitation.id));
+          })
+          const messages = await getDocs(query(collection(db, "messages"), where("toRoom", "==", id)));
+          messages.forEach((message) => {
+            deleteDoc(doc(db, "messages", message.id));
           })
         } else {
           updateDoc(doc(db, "rooms", id as string), {
@@ -122,21 +127,23 @@ export default function Page() {
   useEffect(() => {
     const fetchRoom = () => {
       onSnapshot(doc(db, "rooms", id as string), (room) => {
-        const index = room.data()?.members.indexOf(currentEmail);
-        if(index !== -1){
-          setMembers(
-            room.data()?.members.slice(index).concat(room.data()?.members.slice(0, index))
-          );
+        if(room.exists()){
+          const index = room.data()?.members.indexOf(currentEmail);
+          if(index !== -1){
+            setMembers(
+              room.data()?.members.slice(index).concat(room.data()?.members.slice(0, index))
+            );
+          }
+          if(index === -1 && router.canGoBack()) {
+            router.back();
+          }
+          setRoomInfo({
+            password: room.data()?.password,
+            host: room.data()?.host,
+            deck_id: room.data()?.deck_id.deck_id,
+            preRoundWinner:  room.data()?.preRoundWinner
+          })
         }
-        if(index === -1 && router.canGoBack()) {
-          router.back();
-        }
-        setRoomInfo({
-          password: room.data()?.password,
-          host: room.data()?.host,
-          deck_id: room.data()?.deck_id.deck_id,
-          preRoundWinner:  room.data()?.preRoundWinner
-        })
       });
     };
     fetchRoom();
