@@ -33,7 +33,10 @@ export default function Page() {
     deck_id: "",
     preRoundWinner: "",  
   })
-  const [onInfo, setOnInfo] = useState(false);
+  const [onInfo, setOnInfo] = useState(false); 
+  const [gameState, setGameState] = useState(0); 
+  const [onboardCard,setOnboardCard] = useState<Card[]>([]) 
+    
   const handleOutRoom = async () => {
     try{
       touchSound();
@@ -64,6 +67,11 @@ export default function Page() {
       updateDoc(doc(db, "users", currentEmail as string), {
         inRoomNo: "0000000",
       });
+      if(room.data()?.preRoundWinner === currentEmail){ 
+        updateDoc(doc(db, "rooms", currentEmail as string), {
+          preRoundWinner: "",
+        });
+      } 
     } catch(error) {
       Toast.show({
         type: 'error',
@@ -103,7 +111,7 @@ export default function Page() {
           });
         } 
         let turn = 0
-        if(roomInfo.preRoundWinner !== undefined){
+        if(roomInfo.preRoundWinner !== undefined && roomInfo.preRoundWinner !==""){
             turn = players.findIndex((player: Player) => player.email === roomInfo.preRoundWinner); 
         } 
         else if(members.length === 4){ 
@@ -115,13 +123,12 @@ export default function Page() {
           player : players, 
           onboardCard:[],
           turn:turn,
-          onGameState: true     
+          onGameState: 1     
         });    
       })
       .catch((error) => {
         console.error("Error:", error);
-      });
-     
+      }); 
   };
 
   useEffect(() => {
@@ -148,6 +155,14 @@ export default function Page() {
     };
     fetchRoom();
   }, [id]);
+  useEffect(() => {
+    onSnapshot(doc(db, 'rooms', id as string), (room) => { 
+      setGameState(room.data()?.onGameState); 
+      if(room.data()?.onboardCard){
+        setOnboardCard(room.data()?.onboardCard);
+      }  
+    }) 
+  }, []); 
   return (
     <View className="relative w-full h-full justify-center items-center">
       <Image
@@ -164,13 +179,21 @@ export default function Page() {
           </View>
         )}
         
-        {roomInfo.host === currentEmail && 
+        {roomInfo.host === currentEmail && gameState === 0 && 
           <TouchableOpacity className="absolute" onPress={handleStartGame}>
             <View className="bg-sky-500 p-3 rounded-md">
               <Text className="font-semibold">Start Game</Text>
             </View>
           </TouchableOpacity>
         } 
+        {gameState === 1 && onboardCard.map((card, index) => ( 
+              <Image
+                source={{ uri: card.image }}
+                resizeMode='contain'
+                style = {{position: "absolute", left: (index * 70)/2}} 
+                className={`w-[970px] h-[70px]  translate-y-[-10px] `}
+              />  
+        ))}
       <TouchableOpacity
         className="absolute top-[10%] right-[5%]"
         onPress={handleOutRoom}

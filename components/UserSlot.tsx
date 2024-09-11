@@ -44,7 +44,7 @@ export default function UserSlot({
   }){
   const {user} = useUser()
   const currentEmail = user?.emailAddresses[0].emailAddress
-  const[gameState,setgGameState] = useState<boolean>(false) 
+  const[gameState,setgGameState] = useState<number>(0) 
   const [player, setPlayer] = useState<Player>({
     email: '' , 
     hand:  [], 
@@ -212,7 +212,8 @@ export default function UserSlot({
     const roomRef = doc(db, "rooms", id as string); 
     updateDoc(roomRef, {
       preRoundWinner : currentEmail,
-      onGameState : false 
+      onGameState : 0,
+      player : []  
     }) 
   };  
   checkEndGame();
@@ -234,37 +235,50 @@ export default function UserSlot({
     if(turn >= room.data()?.player.length) turn = 0; 
     updateDoc(roomRef, {
       turn: turn
-    })  
+    })     
     if (room.data()?.player[turn].isPass === true) {
       updateTurn();
-      return;
-    } 
-    const passCount = room.data()?.players.filter((player: { isPass: boolean }) => player.isPass === true).length; //maybe unefine?
+      return; 
+    }  
+    const passCount = room.data()?.player.filter((player: Player) => player.isPass === true).length;  
     if(passCount === room.data()?.player.length - 1){ 
-      room.data()?.player.forEach((_: any, index: number) => {
-        updateDoc(roomRef, {
-          [`player.${index}.isPass`]: false
-        })  
-      }); 
-      //  update next turn player muon play cai j cx dc 
-    } 
+      const roomDataPlayers = room.data()?.player;
+      const newRoomDataPlayers = roomDataPlayers.map((p: Player) => { 
+          return {
+            ...p,
+            isPass: false,
+          };
+       
+      })
+      updateDoc(roomRef, { 
+        player: newRoomDataPlayers,  
+        onboardCard:[] 
+      })  
+    }  
   };
   
   const  passTurn = async () => {
-    if( await isTurn() === false) return;  
+    if( await isTurn() === false || onboardCard.length === 0) return;  
     const roomRef = doc(db, "rooms", id as string);
-    const room = await getDoc(roomRef);
-    let turn = room.data()?.turn;
-    updateDoc(roomRef, {
-      [`player.${turn}.isPass`]: true
-    })  
+    const room = await getDoc(roomRef); 
+    const roomDataPlayers = room.data()?.player;
+    const newRoomDataPlayers = roomDataPlayers.map((p: Player) => { 
+      if (p.email === currentEmail) {
+        return {
+          ...p,
+          isPass: true,
+        };
+      }
+      return p;
+    })
+    updateDoc(roomRef, { player: newRoomDataPlayers }); 
     updateTurn();
   }; 
    
   const handleCardPlay = async () => {
     if( await isTurn() === false) return;  
     const playedCards = selectedCardIndices.map((index) => player.hand[index]);  
-    if(!isValidPlay(playedCards,onboardCard,true))return  
+    if(!isValidPlay(playedCards,onboardCard,false))return  
     setSelectedCardIndices([]);  
     const filteredHand = player.hand.filter((_, index) => !selectedCardIndices.includes(index));
     const roomRef = doc(db, "rooms", id as string);
@@ -281,7 +295,7 @@ export default function UserSlot({
         };
       }
       return p;
-    })
+    }) 
     updateDoc(roomRef, { player: newRoomDataPlayers }); 
     updateTurn() 
   };
@@ -393,11 +407,8 @@ export default function UserSlot({
         
       if(room.data()?.onboardCard){
         setOnboardCard(room.data()?.onboardCard);
-      } 
-        
-      if(room.data()?.onGameState){
-        setgGameState(room.data()?.onGameState);
       }  
+      setgGameState(room.data()?.onGameState);  
     })  
     onSnapshot(query(collection(db, "messages"), where("toRoom", "==", id)), async (snapshot) => {
       setMessages(
@@ -415,7 +426,7 @@ export default function UserSlot({
   return (
     <>
     <CustomConfirmModal open={onModal} onClose={() => setOnModal(false)}  content={'Are you sure you want to kick this player?'} onConfirm={handleKick} />
-    {no== 1 && (
+    {no== 1 && gameState == 1    && (
       <View className='absolute w-screen h-screen'>
         <View className='absolute top-[67%] left-[10%] w-full'>
           {player?.hand.map((card, index) => (
@@ -439,6 +450,13 @@ export default function UserSlot({
                 </View>
               </TouchableOpacity>
             }
+             {player?.hand.length > 0  && 
+              <TouchableOpacity onPress={passTurn}>
+                <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
+                  <Text className='text-white font-semibold'>Pass</Text>
+                </View>
+              </TouchableOpacity>
+            } 
              {selectedCardIndices.length > 0 && 
               <TouchableOpacity onPress={handleCardPlay}>
                 <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
@@ -544,3 +562,5 @@ export default function UserSlot({
     </>
   )
 }
+ 
+ 
