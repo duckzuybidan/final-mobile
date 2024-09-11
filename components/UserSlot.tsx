@@ -207,14 +207,39 @@ export default function UserSlot({
     });
   };
  
-  const checkEndGame = () => { 
-    if (player.hand.length !==0 || !gameState) return 
-    const roomRef = doc(db, "rooms", id as string); 
-    updateDoc(roomRef, {
-      preRoundWinner : currentEmail,
-      onGameState : 0,
-      player : []  
-    }) 
+  const checkEndGame = async () => { 
+    const roomRef = doc(db, "rooms", id as string);  
+    const room = await getDoc(roomRef); 
+    if(room.data()?.player.some((player :Player) => player.hand.length === 0 ) && gameState === 1) { 
+      updateDoc(roomRef, {
+        preRoundWinner : room.data()?.player.find((player:Player) => player.hand.length === 0),
+        onGameState : 0,
+        player : []  
+      })  
+      if(currentEmail === room.data()?.preRoundWinner){ 
+        Toast.show({
+          type: "info",
+          text1: "You just win " + (room.data()?.player.length -1)*30 + " coins" ,
+        });
+      }else{
+        Toast.show({
+          type: "info",
+          text1: "You just lose 30 coins" ,
+        }); 
+      } 
+      if(currentEmail !== host) return
+      const userRef = doc(db, "users", userEmail as string) 
+      const user = await getDoc(userRef); 
+      if(userEmail === room.data()?.preRoundWinner) 
+      {updateDoc(doc(db, "users", userEmail as string), {
+        coins: user.data()?.coins + 30
+      }) 
+      }else{
+        updateDoc(doc(db, "users", userEmail as string), {
+          coins: user.data()?.coins - 30
+        }) 
+      } 
+    }    
   };  
   checkEndGame();
    
@@ -426,7 +451,7 @@ export default function UserSlot({
   return (
     <>
     <CustomConfirmModal open={onModal} onClose={() => setOnModal(false)}  content={'Are you sure you want to kick this player?'} onConfirm={handleKick} />
-    {no== 1 && gameState == 1    && (
+    {no== 1 && (
       <View className='absolute w-screen h-screen'>
         <View className='absolute top-[67%] left-[10%] w-full'>
           {player?.hand.map((card, index) => (
@@ -443,21 +468,21 @@ export default function UserSlot({
             </Pressable>
             ))}
             <View className='absolute right-[20%] flex flex-col space-y-1'>
-            {player?.hand.length > 0 && 
+            {player?.hand.length > 0   && gameState == 1    && 
               <TouchableOpacity onPress={handleSort}>
                 <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
                   <Text className='text-white font-semibold'>Sort</Text>
                 </View>
               </TouchableOpacity>
             }
-             {player?.hand.length > 0  && 
+             {player?.hand.length > 0  && gameState == 1     && 
               <TouchableOpacity onPress={passTurn}>
                 <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
                   <Text className='text-white font-semibold'>Pass</Text>
                 </View>
               </TouchableOpacity>
             } 
-             {selectedCardIndices.length > 0 && 
+             {selectedCardIndices.length > 0  && gameState == 1    && 
               <TouchableOpacity onPress={handleCardPlay}>
                 <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
                   <Text className='text-white font-semibold'>Play Card</Text>

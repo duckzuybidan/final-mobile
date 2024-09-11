@@ -68,7 +68,7 @@ export default function Page() {
         inRoomNo: "0000000",
       });
       if(room.data()?.preRoundWinner === currentEmail){ 
-        updateDoc(doc(db, "rooms", currentEmail as string), {
+        updateDoc(doc(db, "rooms", id as string), {
           preRoundWinner: "",
         });
       } 
@@ -83,7 +83,24 @@ export default function Page() {
   const handleStartGame = async () => {
     const players: Player[] = []; 
     if (roomInfo.host !== currentEmail) return;
-    
+    if(members.length < 2) {
+      Toast.show({
+        type: "error",
+        text1: "Not enough players",
+      });
+      return;
+    }
+    for(let i =0;i<members.length;i++ ) { 
+      const userRef = doc(db, "users", members[i] as string) 
+      const user = await getDoc(userRef);  
+      if(user.data()?.coins < 30)  {
+        Toast.show({
+          type: "error",
+          text1: "There is player has not enough coin to play",
+        });
+        return;
+       } 
+    }
     const dealUrl =
       "https://www.deckofcardsapi.com/api/deck/"+ roomInfo.deck_id + "/draw/?count="+members.length*13 
       const shuffleUrl =
