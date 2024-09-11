@@ -186,7 +186,7 @@ export default function UserSlot({
     )
   }
   const KickIcon = () => {
-    if(no === 1) return
+    if(no === 1 || gameState) return
     if(host !== currentEmail) return
     return (
       <TouchableOpacity onPress={() => {
@@ -207,15 +207,15 @@ export default function UserSlot({
     });
   };
  
-  const checkEndGame = async () => { 
-    const roomRef = doc(db, "rooms", id as string);  
-    const room = await getDoc(roomRef); 
+  const checkEndGame = async (room:any,roomRef:any) => {  
     if(room.data()?.player.some((player :Player) => player.hand.length === 0 ) && gameState === 1) { 
-      updateDoc(roomRef, {
+      if(currentEmail === host)
+      { updateDoc(roomRef, {
         preRoundWinner : room.data()?.player.find((player:Player) => player.hand.length === 0),
         onGameState : 0,
         player : []  
-      })  
+        })  
+      }
       if(currentEmail === room.data()?.preRoundWinner){ 
         Toast.show({
           type: "info",
@@ -243,7 +243,7 @@ export default function UserSlot({
       } 
     }    
   };  
-  checkEndGame();
+ 
    
   const isTurn = async () => {
     const roomRef = doc(db, "rooms", id as string);
@@ -307,7 +307,7 @@ export default function UserSlot({
     const playedCards = selectedCardIndices.map((index) => player.hand[index]);  
     if(!isValidPlay(playedCards,onboardCard,false))return  
     setSelectedCardIndices([]);  
-    const filteredHand = player.hand.filter((_, index) => !selectedCardIndices.includes(index));
+    const filteredHand = player.hand.filter((_, index) => !selectedCardIndices.includes(index)); 
     const roomRef = doc(db, "rooms", id as string);
     const room = await getDoc(roomRef);
     updateDoc(roomRef, {
@@ -323,6 +323,10 @@ export default function UserSlot({
       }
       return p;
     }) 
+    setPlayer((prevPlayer) => ({
+      ...prevPlayer,
+      hand: filteredHand,
+    }));
     updateDoc(roomRef, { player: newRoomDataPlayers }); 
     updateTurn() 
   };
@@ -424,27 +428,27 @@ export default function UserSlot({
   }, [userEmail])
  
   useEffect(() => {
-    onSnapshot(doc(db, 'rooms', id as string), (room) => {
+    onSnapshot(doc(db, 'rooms', id as string), (room) => { 
+      checkEndGame(room,doc(db, 'rooms', id as string));  
       if(room.data()?.player){
         const player = room.data()?.player.find((p: Player) => p.email === currentEmail);
         if(player){
           setPlayer(player);
         }
-      }
-        
+      } 
       if(room.data()?.onboardCard){
         setOnboardCard(room.data()?.onboardCard);
       }  
-      setgGameState(room.data()?.onGameState);  
+      setgGameState(room.data()?.onGameState);        
     })  
     onSnapshot(query(collection(db, "messages"), where("toRoom", "==", id)), async (snapshot) => {
       setMessages(
         snapshot.docs.map((doc) => doc.data() as Message)
         .sort((a, b) => Number(a.createdAt) - Number(b.createdAt))
-      );
-      
-    })
+      ); 
+    }) 
   }, []);
+   
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollToEnd({ animated: true });
@@ -485,7 +489,7 @@ export default function UserSlot({
               </TouchableOpacity>
             } 
              {selectedCardIndices.length > 0  && gameState == 1    && 
-              <TouchableOpacity onPress={handleCardPlay}>
+              <TouchableOpacity onPress={handleCardPlay} >
                 <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
                   <Text className='text-white font-semibold'>Play Card</Text>
                 </View>

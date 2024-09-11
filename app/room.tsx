@@ -105,7 +105,7 @@ export default function Page() {
     } 
     setGameState(1); 
     const dealUrl =
-      "https://www.deckofcardsapi.com/api/deck/"+ roomInfo.deck_id + "/draw/?count="+members.length*13 
+      "https://www.deckofcardsapi.com/api/deck/"+ roomInfo.deck_id + "/draw/?count=" + members.length*13 
       const shuffleUrl =
       "https://www.deckofcardsapi.com/api/deck/"+  roomInfo.deck_id +"/shuffle/";
     
