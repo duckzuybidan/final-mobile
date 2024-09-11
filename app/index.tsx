@@ -170,8 +170,8 @@ export default function Page() {
       setIsLoading(false)
       const checked = await getDoc(doc(db, "users", user?.emailAddresses[0].emailAddress!));
       if(checked.exists()){
-        setCoins(checked.data().coins)
         onSnapshot(doc(db, "users", user?.emailAddresses[0].emailAddress!), (doc) => {
+          setCoins(checked.data().coins)
           setInRoomNo(doc.data()?.inRoomNo)
         })
         return
