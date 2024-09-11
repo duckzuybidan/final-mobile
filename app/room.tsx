@@ -40,6 +40,9 @@ export default function Page() {
   const handleOutRoom = async () => {
     try{
       touchSound();
+      updateDoc(doc(db, "users", currentEmail as string), {
+        inRoomNo: "0000000",
+      });
       const room = await getDoc(doc(db, "rooms", id as string));
       if (room.data()?.host === currentEmail) {
         if (members.length === 1) {
@@ -64,9 +67,7 @@ export default function Page() {
           members: arrayRemove(currentEmail as string),
         });
       }
-      updateDoc(doc(db, "users", currentEmail as string), {
-        inRoomNo: "0000000",
-      });
+      
       if(room.data()?.preRoundWinner === currentEmail){ 
         updateDoc(doc(db, "rooms", id as string), {
           preRoundWinner: "",
