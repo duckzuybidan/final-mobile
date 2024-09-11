@@ -42,22 +42,8 @@ const suitOrder: { [key: string]: number } = {
 function isStraight(cards: Card[]): boolean {
   if (cards.length < 3) return false;
 
-  // Sort cards by value
-  const sortedCards = cards.sort((a: { value: number; suit: string }, b: { value: number; suit: string }) => {
-    const valueScoreA = cardValues[a.value];
-    const valueScoreB = cardValues[b.value];
-
-    if (valueScoreA !== valueScoreB) {
-      return valueScoreA - valueScoreB;
-    }
-
-    const suitScoreA = suitOrder[a.suit];
-    const suitScoreB = suitOrder[b.suit];
-    return suitScoreA - suitScoreB;
-  });
-
-  for (let i = 1; i < sortedCards.length; i++) {
-    if (cardValues[sortedCards[i].value] !== cardValues[sortedCards[i - 1].value] + 1) {
+  for (let i = 1; i < cards.length; i++) {
+    if (cardValues[cards[i].value] !== cardValues[cards[i - 1].value] + 1) {
       return false;
     }
   }
@@ -89,7 +75,9 @@ function isNPairStraight(cards: Card[], n: number): boolean {
   return true;
 }
 
-export default function isValidPlay(cards: Card[], onBoardCards: Card[], isReTurn: boolean): boolean {
+export default function isValidPlay(_cards: Card[], _onBoardCards: Card[], isReTurn: boolean): boolean {
+  const cards = sortHand(_cards);
+  const onBoardCards = sortHand(_onBoardCards);
   if (isReTurn && (isPair(cards) || isThreeOfAKind(cards) || isFourOfAKind(cards) || isStraight(cards) ||
   cards.length === 1 || isNPairStraight(cards, 3) || isNPairStraight(cards, 4)))
     return true;
@@ -182,7 +170,8 @@ function hasMatchingSubset(cards: Card[], n: number, checkFunction: (cards: Card
   return backtrack(0);
 }
 
-export function isGoAhead(cards: Card[], isFirstGame: boolean): boolean {//tới trắng, đ bk dịch :)))
+export function isGoAhead(_cards: Card[], isFirstGame: boolean): boolean {//tới trắng, đ bk dịch :)))
+  const cards = sortHand(_cards);
   if (isFirstGame) {
     if (hasMatchingSubset(cards, 4, (subset) => {// tứ quý 3
       return isFourOfAKind(subset) && subset[0].value === 1;
