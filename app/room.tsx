@@ -82,7 +82,7 @@ export default function Page() {
   };
 
   const handleStartGame = async () => {
-    setGameState(1);
+     
     const players: Player[] = []; 
  
     if(members.length < 2) {
@@ -103,6 +103,7 @@ export default function Page() {
         return;
        } 
     } 
+    setGameState(1); 
     const dealUrl =
       "https://www.deckofcardsapi.com/api/deck/"+ roomInfo.deck_id + "/draw/?count="+members.length*13 
       const shuffleUrl =

@@ -220,11 +220,13 @@ export default function UserSlot({
         Toast.show({
           type: "info",
           text1: "You just win " + (room.data()?.player.length -1)*30 + " coins" ,
+          visibilityTime: 4000  
         });
       }else{
         Toast.show({
           type: "info",
           text1: "You just lose 30 coins" ,
+          visibilityTime: 4000 
         }); 
       } 
       if(currentEmail !== host) return
