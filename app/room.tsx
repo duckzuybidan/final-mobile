@@ -28,7 +28,7 @@ export default function Page() {
   const currentEmail = user?.emailAddresses[0].emailAddress;
   const [members, setMembers] = useState([]);
   const [turn, setTurn] = useState<boolean[]>([]);
- 
+  const [refresh, setRefresh] = useState(false);
   const [roomInfo, setRoomInfo] = useState({
     password: "",
     host: "",
@@ -244,7 +244,9 @@ export default function Page() {
       }
     });
   }, []);
-
+useEffect(() => {
+  setRefresh(true)
+}, [members])
   const checkEndGame = async () => {
     if (!gameState) return;
     const roomRef = doc(db, "rooms", id as string);
@@ -354,6 +356,8 @@ export default function Page() {
         onboardCard={onboardCard}
         isTurn={turn[0]}
         remain ={remain[0]}
+        refresh={refresh}
+        setRefresh={setRefresh}
       />
       <UserSlot
         no={2}
@@ -364,6 +368,8 @@ export default function Page() {
         onboardCard={onboardCard}
         isTurn={turn[1]}
         remain ={remain[1]}
+        refresh={refresh}
+        setRefresh={setRefresh}
       />
       <UserSlot
         no={3}
@@ -374,6 +380,8 @@ export default function Page() {
         onboardCard={onboardCard}
         isTurn={turn[2]}
         remain ={remain[2]}
+        refresh={refresh}
+        setRefresh={setRefresh}
       />
       <UserSlot
         no={4}
@@ -384,6 +392,8 @@ export default function Page() {
         onboardCard={onboardCard}
         isTurn={turn[3]}
         remain ={remain[3]}
+        refresh={refresh}
+        setRefresh={setRefresh}
       />
       <Toast />
     </View>

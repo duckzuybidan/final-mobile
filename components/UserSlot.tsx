@@ -63,6 +63,8 @@ export default function UserSlot({
   onboardCard,
   isTurn,
   remain,
+  refresh,
+  setRefresh
 }: {
   no: number;
   userEmail?: string;
@@ -72,6 +74,8 @@ export default function UserSlot({
   onboardCard: Card[];
   isTurn: boolean;
   remain: number;
+  refresh: boolean,
+  setRefresh: (refresh: boolean) => void
 }) {
   
   const { user } = useUser();
@@ -420,17 +424,14 @@ export default function UserSlot({
   }, [currentEmail]);
   useEffect(() => {
     if (!userEmail) return; 
-    
     const fetchUser = async () => {
-      const userRef = doc(db, "users", userEmail);
-      const user = await getDoc(userRef);
-      setUserData(user.data() as any);
       onSnapshot(doc(db, "users", userEmail), (doc) => {
         setUserData(doc.data() as any);
       });
     };
     fetchUser();
   }, [userEmail]);
+  
   useEffect(() => {
     onSnapshot(
       query(collection(db, "messages"), where("toRoom", "==", id)),
@@ -454,6 +455,18 @@ export default function UserSlot({
       scrollRef.current.scrollToEnd({ animated: true });
     }
   }, [messages]);
+  useEffect(() => {
+   if(!refresh) return;
+   const fetchUser = async () => {
+     const userRef = doc(db, "users", userEmail as string);
+     const user = await getDoc(userRef);
+     setUserData(user.data() as any);
+   }
+   fetchUser();
+   setTimeout(() => {
+     setRefresh(false);
+   }, 1000);
+  }, [refresh])
   return (
     <>
       <CustomConfirmModal
