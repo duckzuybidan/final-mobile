@@ -95,6 +95,7 @@ export default function Page() {
         text1Style: { fontSize: 16 },
       });
     }
+    router.back();
   };
 
   const handleStartGame = async () => {
