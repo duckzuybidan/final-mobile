@@ -17,6 +17,7 @@ import RoomModal from "@/components/RoomModal";
 import { useNavigationState } from "@react-navigation/native";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Toast from "react-native-toast-message";
+import { Player } from "@/helper/game_logic";
 enum Strategy {
   Google = 'oauth_google',
 }
@@ -136,10 +137,16 @@ export default function Page() {
       return;
     }
     const roomRef = doc(db, "rooms", invitation.roomID);
-    updateDoc(roomRef, {
-      members: arrayUnion(user?.emailAddresses[0].emailAddress!),
-    });
-    
+    if(!room.data().player){
+      updateDoc(roomRef, {
+        members: arrayUnion(user?.emailAddresses[0].emailAddress!),
+      });
+    }
+    else{
+      updateDoc(roomRef, {
+        members: room.data().player.map((p: Player) => p.email),
+      });
+    }
     updateDoc(doc(userRef, user?.emailAddresses[0].emailAddress!), {
       inRoomNo: invitation.roomID,
     });

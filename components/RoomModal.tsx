@@ -1,4 +1,5 @@
 import { db } from "@/firebase";
+import { Player } from "@/helper/game_logic";
 import { touchSound } from "@/utils/effects";
 import { router } from "expo-router";
 import {
@@ -95,9 +96,16 @@ export default function RoomModal({
       return;
     }
     const roomRef = doc(db, "rooms", formData.roomId);
-    updateDoc(roomRef, {
-      members: arrayUnion(email),
-    });
+    if(!checked.data().player){
+      updateDoc(roomRef, {
+        members: arrayUnion(email),
+      });
+    }
+    else{
+      updateDoc(roomRef, {
+        members: checked.data().player.map((p: Player) => p.email),
+      });
+    }
     const userRef = collection(db, "users");
     updateDoc(doc(userRef, email), {
       inRoomNo: formData.roomId,
