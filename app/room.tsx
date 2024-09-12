@@ -55,7 +55,6 @@ export default function Page() {
       const room = await getDoc(doc(db, "rooms", id as string));
       if (room.data()?.host === currentEmail) {
         if (members.length === 1) {
-          router.back();
           deleteDoc(doc(db, "rooms", id as string));
           const invitations = await getDocs(
             query(collection(db, "invitations"), where("roomID", "==", id))
@@ -185,7 +184,7 @@ export default function Page() {
                 .concat(room.data()?.members.slice(0, index))
             );
           }
-          if (index === -1) {
+          if (index === -1 && router.canGoBack()) {
             router.back();
           }
           setRoomInfo({
