@@ -207,9 +207,19 @@ export default function Page() {
         }
         const turn = room.data()?.turn;
         const turnList: boolean[] = []; 
+        const index = room.data()?.members.indexOf(currentEmail);
+        let menbers2  
+        if (index !== -1) {
+          menbers2 = (
+            room
+              .data()
+              ?.members.slice(index)
+              .concat(room.data()?.members.slice(0, index))
+          );
+        } 
         for (let i = 0; i < room.data()?.player.length; i++) {
-          if (room.data()?.members[turn] === room.data()?.player[i].email) {
-            turnList.push(true);
+          if (room.data()?.members[turn] === menbers2[i]) {
+            turnList.push(true);  
           } else turnList.push(false);
         }
         setTurn(turnList); 
