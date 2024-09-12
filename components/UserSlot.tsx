@@ -248,11 +248,11 @@ export default function UserSlot({
       const user = await getDoc(userRef);  
       if(userEmail === room.data()?.preRoundWinner) 
       {updateDoc(doc(db, "users", userEmail as string), {
-        coins: user.data()?.coins + (room.data()?.player.length -1)*15
+        coins: user.data()?.coins + (room.data()?.player.length -1)*30
       }) 
       }else{
         updateDoc(doc(db, "users", userEmail as string), {
-          coins: user.data()?.coins - 15
+          coins: user.data()?.coins - 30
         }) 
       }  
   };  
