@@ -243,7 +243,7 @@ export default function Page() {
         setOnboardCard(room.data()?.onboardCard);
       }
     });
-  }, [ ]);
+  }, []);
 
   const checkEndGame = async () => {
     if (!gameState) return;

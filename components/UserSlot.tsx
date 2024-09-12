@@ -422,9 +422,11 @@ export default function UserSlot({
     if (!userEmail) return; 
     
     const fetchUser = async () => {
+      const userRef = doc(db, "users", userEmail);
+      const user = await getDoc(userRef);
+      setUserData(user.data() as any);
       onSnapshot(doc(db, "users", userEmail), (doc) => {
         setUserData(doc.data() as any);
-
       });
     };
     fetchUser();
