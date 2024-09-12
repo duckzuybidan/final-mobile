@@ -294,8 +294,8 @@ export default function Page() {
     }
   };
   useEffect(() => {
- checkEndGame()
-  },  );   
+  checkEndGame()
+  },[remain]);   
    return (
     <View className="relative w-full h-full justify-center items-center">
       <Image
