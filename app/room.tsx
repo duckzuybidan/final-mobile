@@ -72,12 +72,14 @@ export default function Page() {
         } else {
           updateDoc(doc(db, "rooms", id as string), {
             members: arrayRemove(currentEmail as string),
+            player: arrayRemove(room .data() ?.player.find((player: Player) => player.email ===  currentEmail)), 
             host: members[1],
           });
         }
       } else {
         updateDoc(doc(db, "rooms", id as string), {
           members: arrayRemove(currentEmail as string),
+          player: arrayRemove(room .data() ?.player.find((player: Player) => player.email ===  currentEmail)),  
         });
       }
 
@@ -229,7 +231,8 @@ export default function Page() {
           .data()
           ?.player.find((player: Player) => player.email === menbers2[i]); 
           if(p.hand)remainList.push(p.hand.length) 
-          else remainList.push(0) 
+          else remainList.push(0)
+          
         }
         setTurn(turnList); 
         setRemain(remainList) 
