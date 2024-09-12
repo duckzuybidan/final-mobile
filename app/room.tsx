@@ -176,7 +176,7 @@ export default function Page() {
     const fetchRoom = () => {
       onSnapshot(doc(db, "rooms", id as string), (room) => {
         if (room.exists()) {
-          const index = room.data()?.members.indexOf(currentEmail);
+          let index = room.data()?.members.indexOf(currentEmail);
           if (index !== -1) {
             setMembers(
               room
