@@ -420,13 +420,14 @@ export default function UserSlot({
   useEffect(() => {
     if (!userEmail) return;
     const fetchUser = async () => {
+      console.log(userEmail);
       onSnapshot(doc(db, "users", userEmail), (doc) => {
         setUserData(doc.data() as any);
+        
       });
     };
     fetchUser();
   }, [userEmail]);
-
   useEffect(() => {
     onSnapshot(
       query(collection(db, "messages"), where("toRoom", "==", id)),

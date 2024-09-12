@@ -346,9 +346,9 @@ export default function Page() {
         <Feather name="log-out" size={30} color="white" />
       </TouchableOpacity>
       {[...Array(4)].map((_, index) => {
-        const member = members[index];
-        const isTurn = turn[index];
-        const remains = remain[index]; 
+        let member = members[index];
+        let isTurn = turn[index];
+        let remains = remain[index]; 
         return (
           <UserSlot
             key={index}
@@ -361,6 +361,7 @@ export default function Page() {
             isTurn={isTurn}
             remain ={remains}
           />
+
         );
       })}
       <Toast />
