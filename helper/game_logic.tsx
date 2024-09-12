@@ -75,7 +75,7 @@ function isNPairStraight(cards: Card[], n: number): boolean {
   return true;
 }
 
-export default function isValidPlay(_cards: Card[], _onBoardCards: Card[], isReTurn: boolean): boolean {return true
+export default function isValidPlay(_cards: Card[], _onBoardCards: Card[], isReTurn: boolean): boolean { 
   const cards = sortHand(_cards);
   const onBoardCards = sortHand(_onBoardCards);
   if (isReTurn && (isPair(cards) || isThreeOfAKind(cards) || isFourOfAKind(cards) || isStraight(cards) ||
