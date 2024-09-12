@@ -283,11 +283,11 @@ export default function Page() {
 
     const userRef = doc(db, "users", currentEmail as string);
     const user = await getDoc(userRef);
-    if (currentEmail === winner.email) {
+    if (currentEmail === winner.email) {console.log("+30")
       updateDoc(doc(db, "users", currentEmail as string), {
         coins: user.data()?.coins + (room.data()?.player.length - 1) * 30,
       });
-    } else {
+    } else {console.log("-30")
       updateDoc(doc(db, "users", currentEmail as string), {
         coins: user.data()?.coins - 30,
       });

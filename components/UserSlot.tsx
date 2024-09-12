@@ -288,8 +288,7 @@ export default function UserSlot({
     }
     const passCount = room
       .data()
-      ?.player.filter((player: Player) => player.isPass === true).length;
-    console.log(passCount);
+      ?.player.filter((player: Player) => player.isPass === true).length; 
     if (passCount >= room.data()?.player.length - 1) {
       const roomDataPlayers = room.data()?.player;
       const newRoomDataPlayers = roomDataPlayers.map((p: Player) => {
