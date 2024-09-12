@@ -71,14 +71,14 @@ export default function Page() {
         } else {
           updateDoc(doc(db, "rooms", id as string), {
             members: arrayRemove(currentEmail as string),
-            player: arrayRemove(room .data() ?.player.find((player: Player) => player.email ===  currentEmail)), 
+            
             host: members[1],
           });
         }
       } else {
         updateDoc(doc(db, "rooms", id as string), {
           members: arrayRemove(currentEmail as string),
-          player: arrayRemove(room .data() ?.player.find((player: Player) => player.email ===  currentEmail)),  
+          
         });
       }
 
@@ -105,6 +105,7 @@ export default function Page() {
         type: "error",
         text1: "Not enough players",
       });
+      return 
     }
     for (let i = 0; i < members.length; i++) {
       const userRef = doc(db, "users", members[i] as string);
