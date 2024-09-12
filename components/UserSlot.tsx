@@ -616,12 +616,14 @@ export default function UserSlot({
         ) : (
           <AntDesign name="pluscircleo" size={50} color="black" />
         )}
-        { no != 1&& userEmail  &&(
-            <View>
+        {no !== 1 && userEmail && (
+            <View className='absolute left-[60%]'>
             <Image  source={{
               uri: "https://www.deckofcardsapi.com/static/img/back.png",
-            }}   resizeMode='contain' className='w-[70px] h-[70px] translate-y-0' />  
-            <Text className='text-sm text-white'>{remain}</Text>
+            }}   resizeMode='contain' className='w-[40px] h-[40px]' />  
+              <View className='absolute top-[20%] left-[10px] bg-white rounded-full w-[20px] h-[20px]'>
+                <Text className='text-center fonr-bold text-red-500'>{remain}</Text>
+              </View>
             </View>
           )
         }

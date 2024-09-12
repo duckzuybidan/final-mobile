@@ -204,14 +204,17 @@ export default function Page() {
             </View>
           </TouchableOpacity>
         } 
+        <View className="absolute left-[20%] top-[40%] h-full w-full">
         {gameState === 1 && onboardCard.map((card, index) => ( 
               <Image
+                key={index}
                 source={{ uri: card.image }}
                 resizeMode='contain'
-                style = {{position: "absolute", left: (index * 70)/2}} 
-                className={`w-[970px] h-[70px]  translate-y-[-10px] `}
+                style = {{position: "absolute", left: (index * 60)/2}} 
+                className={`w-[60px] h-[60px]`}
               />  
         ))}
+        </View>
       <TouchableOpacity
         className="absolute top-[10%] right-[5%]"
         onPress={handleOutRoom}
