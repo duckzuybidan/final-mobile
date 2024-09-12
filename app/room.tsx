@@ -176,17 +176,22 @@ export default function Page() {
     const fetchRoom = () => {
       onSnapshot(doc(db, "rooms", id as string), (room) => {
         if (room.exists()) {
-          let index = room.data()?.members.indexOf(currentEmail);
-          if (index !== -1) {
-            setMembers(
-              room
-                .data()
-                ?.members.slice(index)
-                .concat(room.data()?.members.slice(0, index))
-            );
+          if(room.data()?.members.length > 0) {
+            let index = room.data()?.members.indexOf(currentEmail);
+            if (index !== -1) {
+              setMembers(
+                room
+                  .data()
+                  ?.members.slice(index)
+                  .concat(room.data()?.members.slice(0, index))
+              );
+            }
+            if (index === -1 && router.canGoBack()) {
+              router.back();
+            }
           }
-          if (index === -1 && router.canGoBack()) {
-            router.back();
+          else {
+            deleteDoc(doc(db, "rooms", id as string));
           }
           setRoomInfo({
             password: room.data()?.password,
