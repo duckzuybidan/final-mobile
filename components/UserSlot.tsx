@@ -445,6 +445,11 @@ export default function UserSlot({
       scrollRef.current.scrollToEnd({ animated: true });
     }
   }, [onChatBox]);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
   return (
     <>
       <CustomConfirmModal
