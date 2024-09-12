@@ -228,7 +228,8 @@ export default function Page() {
           const p = room
           .data()
           ?.player.find((player: Player) => player.email === menbers2[i]); 
-          remainList.push(p.hand.length) 
+          if(p.hand)remainList.push(p.hand.length) 
+          else remainList.push(0) 
         }
         setTurn(turnList); 
         setRemain(remainList) 
