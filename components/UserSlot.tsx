@@ -418,16 +418,16 @@ export default function UserSlot({
     fetchFriends();
   }, [currentEmail]);
   useEffect(() => {
-    if (!userEmail) return;
+    if (!userEmail) return; 
+    
     const fetchUser = async () => {
-      console.log(userEmail);
       onSnapshot(doc(db, "users", userEmail), (doc) => {
         setUserData(doc.data() as any);
-        
+
       });
     };
     fetchUser();
-  }, [userEmail]);
+  }, [userEmail, player]);
   useEffect(() => {
     onSnapshot(
       query(collection(db, "messages"), where("toRoom", "==", id)),
