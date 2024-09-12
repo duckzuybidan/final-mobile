@@ -54,27 +54,10 @@ export default function Page() {
       });
       const room = await getDoc(doc(db, "rooms", id as string));
       if (room.data()?.host === currentEmail) {
-        if (members.length === 1) {
-          deleteDoc(doc(db, "rooms", id as string));
-          const invitations = await getDocs(
-            query(collection(db, "invitations"), where("roomID", "==", id))
-          );
-          invitations.forEach((invitation) => {
-            deleteDoc(doc(db, "invitations", invitation.id));
-          });
-          const messages = await getDocs(
-            query(collection(db, "messages"), where("toRoom", "==", id))
-          );
-          messages.forEach((message) => {
-            deleteDoc(doc(db, "messages", message.id));
-          });
-        } else {
           updateDoc(doc(db, "rooms", id as string), {
             members: arrayRemove(currentEmail as string),
-            
             host: members[1],
           });
-        }
       } else {
         updateDoc(doc(db, "rooms", id as string), {
           members: arrayRemove(currentEmail as string),
@@ -174,7 +157,7 @@ export default function Page() {
 
   useEffect(() => {
     const fetchRoom = () => {
-      onSnapshot(doc(db, "rooms", id as string), (room) => {
+      onSnapshot(doc(db, "rooms", id as string), async (room) => {
         if (room.exists()) {
           if(room.data()?.members.length > 0) {
             let index = room.data()?.members.indexOf(currentEmail);
@@ -192,6 +175,18 @@ export default function Page() {
           }
           else {
             deleteDoc(doc(db, "rooms", id as string));
+            const invitations = await getDocs(
+              query(collection(db, "invitations"), where("roomID", "==", id))
+            );
+            invitations.forEach((invitation) => {
+              deleteDoc(doc(db, "invitations", invitation.id));
+            });
+            const messages = await getDocs(
+              query(collection(db, "messages"), where("toRoom", "==", id))
+            );
+            messages.forEach((message) => {
+              deleteDoc(doc(db, "messages", message.id));
+            });
           }
           setRoomInfo({
             password: room.data()?.password,
