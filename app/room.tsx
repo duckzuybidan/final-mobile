@@ -54,10 +54,17 @@ export default function Page() {
       });
       const room = await getDoc(doc(db, "rooms", id as string));
       if (room.data()?.host === currentEmail) {
+        if(members.length === 1){
+          updateDoc(doc(db, "rooms", id as string), {
+            members: arrayRemove(currentEmail as string),
+          });
+        } 
+        else {
           updateDoc(doc(db, "rooms", id as string), {
             members: arrayRemove(currentEmail as string),
             host: members[1],
           });
+        }
       } else {
         updateDoc(doc(db, "rooms", id as string), {
           members: arrayRemove(currentEmail as string),
