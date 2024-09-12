@@ -430,7 +430,7 @@ export default function UserSlot({
       });
     };
     fetchUser();
-  }, [player]);
+  }, [userEmail]);
   useEffect(() => {
     onSnapshot(
       query(collection(db, "messages"), where("toRoom", "==", id)),
