@@ -37,23 +37,23 @@ export default function UserSlot({
   no,
   userEmail,
   host,
+  player,
+  gameState,  
+  onboardCard,
+  isTurn  
   }:{
   no: number,
   userEmail?: string,
-  host: string
+  host: string,
+  player: Player, 
+  gameState: number,
+  onboardCard :Card[],
+  isTurn:boolean   
   }){
   const {user} = useUser()
   const currentEmail = user?.emailAddresses[0].emailAddress
-  const[gameState,setgGameState] = useState<number>(0) 
-  const [player, setPlayer] = useState<Player>({
-    email: '' , 
-    hand:  [], 
-    onTurn: false,
-    isPass: false
-  });
-  const [eturn,seteTurn] = useState<boolean>( ) 
-  const [remain,setRemain] = useState<number>( )
-  const [onboardCard,setOnboardCard] = useState<Card[]>([]) 
+   
+  
   const [selectedCardIndices, setSelectedCardIndices] = useState<number[]>([]); 
   const { id } = useLocalSearchParams(); 
   const [userData, setUserData] = useState<User| null>(null)  
@@ -209,110 +209,29 @@ export default function UserSlot({
     });
   };
  
-  const checkEndGame = async ()  => { 
-    if(!gameState)  return
-    const roomRef =doc(db, 'rooms', id as string) 
-    const room= await getDoc(roomRef)
-    if(room.data()?.player.some((player :Player) => player.hand.length === 0 ) === false || gameState === 0) return   
-     if(currentEmail === host){     
-        const winner = room.data()?.player.find((player:Player) => player.hand.length === 0 );
-        const roomDataPlayers = room.data()?.player; 
-        const newRoomDataPlayers = roomDataPlayers.map((p: Player) => { 
-          return {
-            ...p,
-            hand : [],
-          }; 
-        })    
-          updateDoc(roomRef, {
-          preRoundWinner : winner.email ,
-          onGameState : 0,
-          player :newRoomDataPlayers  ,
-          onboardCard:[] 
-          })   
-      } 
-      if(currentEmail === room.data()?.preRoundWinner){ 
-        Toast.show({
-          type: "info",
-          text1: "You just win " + (room.data()?.player.length -1)*30 + " coins" ,
-          visibilityTime: 4000  
-        });
-      }else{
-        Toast.show({
-          type: "info",
-          text1: "You just lose 30 coins" ,
-          visibilityTime: 4000 
-        }); 
-      } 
-      if(currentEmail !== host ) return  
-      const userRef = doc(db, "users", userEmail as string) 
-      const user = await getDoc(userRef);  
-      if(userEmail === room.data()?.preRoundWinner) 
-      {updateDoc(doc(db, "users", userEmail as string), {
-        coins: user.data()?.coins + (room.data()?.player.length -1)*30
-      }) 
-      }else{
-        updateDoc(doc(db, "users", userEmail as string), {
-          coins: user.data()?.coins - 30
-        }) 
-      }  
-  };  
+   
  
  
-  const isTurn = async () => {
-    const roomRef = doc(db, "rooms", id as string);
-    const room = await getDoc(roomRef);
-    const turn = room.data()?.turn;
-    if (room.data()?.player[turn].email === currentEmail) {
-      return true  
-    }
-     return false  
-  };
-  const setStuff= async () => {
-    const roomRef = doc(db, "rooms", id as string);
-    const room = await getDoc(roomRef);
-    const p = room.data()?.player.find((i: Player) => i.email === userEmail); 
-    if(p){
-      setRemain(p.hand.length) 
-      const turn = room.data()?.turn;
-      if (room.data()?.player[turn].email === userEmail) {
-          seteTurn(true) 
-      }
-        else seteTurn(false)  
-    }  
-  }; 
-  setStuff(); 
-  const  updateTurn = async () => {
-    const roomRef = doc(db, "rooms", id as string);
-    const room = await getDoc(roomRef);
+   
+   
+  
+  const  updateTurn =   (room:any,roomRef:any,newRoomDataPlayers:any,playedCards:any)  => { 
     let turn = room.data()?.turn;
     turn++; 
     if(turn >= room.data()?.player.length) turn = 0; 
-    updateDoc(roomRef, {
-      turn: turn
-    })     
-    if (room.data()?.player[turn].isPass === true) {
-      updateTurn();
-      return; 
-    }  
-    const passCount = room.data()?.player.filter((player: Player) => player.isPass === true).length;  
-    if(passCount === room.data()?.player.length - 1){ 
-      const roomDataPlayers = room.data()?.player;
-      const newRoomDataPlayers = roomDataPlayers.map((p: Player) => { 
-          return {
-            ...p,
-            isPass: false,
-          };
        
-      })
-      updateDoc(roomRef, { 
-        player: newRoomDataPlayers,  
-        onboardCard:[] 
-      })  
+    while (room.data()?.player[turn].isPass == true) {
+      turn++; 
+      if(turn >= room.data()?.player.length) turn = 0; 
     }  
+     
+      updateDoc(roomRef, {
+      turn: turn,player: newRoomDataPlayers, onboardCard: playedCards
+    })    
   };
   
   const  passTurn = async () => {
-    if( await isTurn() === false || onboardCard.length === 0) return;  
+    if(   isTurn  === false || onboardCard.length === 0) return;  
     const roomRef = doc(db, "rooms", id as string);
     const room = await getDoc(roomRef); 
     const roomDataPlayers = room.data()?.player;
@@ -326,20 +245,48 @@ export default function UserSlot({
       return p;
     })
     updateDoc(roomRef, { player: newRoomDataPlayers }); 
-    updateTurn();
+    passAll( );
   }; 
-   
-  const handleCardPlay = async () => {
-    if( await isTurn() === false) return;  
+  const passAll   = async ( ) => {
+    const roomRef = doc(db, "rooms", id as string);
+    const room = await getDoc(roomRef); 
+    let turn = room.data()?.turn;
+    turn++; 
+    if(turn >= room.data()?.player.length) turn = 0; 
+       
+    while (room.data()?.player[turn].isPass == true) {
+      turn++; 
+      if(turn >= room.data()?.player.length) turn = 0; 
+    }  
+    const passCount = room.data()?.player.filter((player: Player) => player.isPass === true).length;  
+    
+      if(passCount <=  room.data()?.player.length - 1 ){ 
+        const roomDataPlayers = room.data()?.player;
+        const newRoomDataPlayers = roomDataPlayers.map((p: Player) => { 
+            return {
+              ...p,
+              isPass: false,
+            };
+         
+        })
+        updateDoc(roomRef, { 
+          player: newRoomDataPlayers,  
+          onboardCard:[] ,
+          turn: turn  
+        })  
+     
+  }; 
+} 
+  const handleCardPlay = async () => { 
+    if(!isTurn)return
     const playedCards = selectedCardIndices.map((index) => player.hand[index]);  
     if(!isValidPlay(playedCards,onboardCard,false))return  
     setSelectedCardIndices([]);  
     const filteredHand = player.hand.filter((_, index) => !selectedCardIndices.includes(index)); 
+    
     const roomRef = doc(db, "rooms", id as string);
     const room = await getDoc(roomRef);
-    updateDoc(roomRef, {
-      onboardCard: playedCards
-    })  
+     
     const roomDataPlayers = room.data()?.player;
     const newRoomDataPlayers = roomDataPlayers.map((p: Player) => {
       if (p.email === currentEmail) {
@@ -349,27 +296,19 @@ export default function UserSlot({
         };
       }
       return p;
-    }) 
-    setPlayer((prevPlayer) => ({
-      ...prevPlayer,
-      hand: filteredHand,
-    }));
-    updateDoc(roomRef, { player: newRoomDataPlayers }); 
-    updateTurn() 
+    })  
+   
+  
+    updateTurn(room,roomRef,newRoomDataPlayers,playedCards) 
   };
   
   const handleSort = async () => {
-    if (!player.hand.length || !id) return;
-
+    if (!player.hand.length || !id) return; 
     const sortedCards = sortHand(player.hand);  
-    setPlayer((prevPlayer) => ({
-      ...prevPlayer,
-      hand: sortedCards,
-    }));
     const roomRef = doc(db, "rooms", id as string);
     const room = await getDoc(roomRef);
     const roomDataPlayers = room.data()?.player;
-    const newRoomDataPlayers = roomDataPlayers.map((p: Player) => {// 2 player sort cung luc -> bug
+    const newRoomDataPlayers = roomDataPlayers.map((p: Player) => { 
       if (p.email === currentEmail) {
         return {
           ...p,
@@ -454,28 +393,15 @@ export default function UserSlot({
     fetchUser()
   }, [userEmail])
  
-  useEffect(() => {
-    onSnapshot(doc(db, 'rooms', id as string),   (room) => { 
-       if(room.data()?.player){
-        const player = room.data()?.player.find((p: Player) => p.email === currentEmail);
-        if(player){
-          setPlayer(player);
-        } 
-      } 
-      if(room.data()?.onboardCard){
-        setOnboardCard(room.data()?.onboardCard);
-      }  
-      setgGameState(room.data()?.onGameState);  
-      checkEndGame();
-    })  
+  useEffect(() => { 
     onSnapshot(query(collection(db, "messages"), where("toRoom", "==", id)), async (snapshot) => {
       setMessages(
         snapshot.docs.map((doc) => doc.data() as Message)
         .sort((a, b) => Number(a.createdAt) - Number(b.createdAt))
       ); 
     }) 
-  }, [gameState,host]);
-   
+  }, [ ]);
+  
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollToEnd({ animated: true });
@@ -598,7 +524,7 @@ export default function UserSlot({
         {userEmail ? (
           <View className={`relative ${no === 1 && 'flex flex-row items-center space-x-2'}`}>
             <View className='flex flex-row space-x-2 items-center'>
-              <Image source={{uri: userData?.avatar}} className='w-[40px] h-[40px] rounded-full' style={ eturn && gameState ? { borderColor: 'green', borderWidth: 2 } : {} } />
+              <Image source={{uri: userData?.avatar}} className='w-[40px] h-[40px] rounded-full' style={ isTurn && gameState ? { borderColor: 'green', borderWidth: 2 } : {} } />
               <KickIcon />
             </View>
             <View>
@@ -616,13 +542,13 @@ export default function UserSlot({
         ) : (
           <AntDesign name="pluscircleo" size={50} color="black" />
         )}
-        {no !== 1 && userEmail && (
+        {no !== 1 && userEmail && gameState === 1  && (
             <View className='absolute left-[60%]'>
             <Image  source={{
               uri: "https://www.deckofcardsapi.com/static/img/back.png",
             }}   resizeMode='contain' className='w-[40px] h-[40px]' />  
               <View className='absolute top-[20%] left-[10px] bg-white rounded-full w-[20px] h-[20px]'>
-                <Text className='text-center fonr-bold text-red-500'>{remain}</Text>
+                <Text className='text-center fonr-bold text-red-500'>haha</Text>
               </View>
             </View>
           )

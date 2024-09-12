@@ -53,6 +53,7 @@ export default function RoomModal({
         host: email,
         deck_id: deckId,
         onGameState: 0, 
+        turn:0 
       });
       const userRef = collection(db, "users");
       updateDoc(doc(userRef, email), {
