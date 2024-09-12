@@ -345,25 +345,46 @@ export default function Page() {
       >
         <Feather name="log-out" size={30} color="white" />
       </TouchableOpacity>
-      {[...Array(4)].map((_, index) => {
-        let member = members[index];
-        let isTurn = turn[index];
-        let remains = remain[index]; 
-        return (
-          <UserSlot
-            key={index}
-            no={index + 1}
-            userEmail={member}
-            host={roomInfo.host}
-            player={players}
-            gameState={gameState}
-            onboardCard={onboardCard}
-            isTurn={isTurn}
-            remain ={remains}
-          />
-
-        );
-      })}
+      <UserSlot
+        no={1}
+        userEmail={members[0]}
+        host={roomInfo.host}
+        player={players}
+        gameState={gameState}
+        onboardCard={onboardCard}
+        isTurn={turn[0]}
+        remain ={remain[0]}
+      />
+      <UserSlot
+        no={2}
+        userEmail={members[1]}
+        host={roomInfo.host}
+        player={players}
+        gameState={gameState}
+        onboardCard={onboardCard}
+        isTurn={turn[1]}
+        remain ={remain[1]}
+      />
+      <UserSlot
+        no={3}
+        userEmail={members[2]}
+        host={roomInfo.host}
+        player={players}
+        gameState={gameState}
+        onboardCard={onboardCard}
+        isTurn={turn[2]}
+        remain ={remain[2]}
+      />
+      <UserSlot
+        no={4}
+        userEmail={members[3]}
+        host={roomInfo.host}
+        player={players}
+        gameState={gameState}
+        onboardCard={onboardCard}
+        isTurn={turn[3]}
+        remain ={remain[3]}
+      />
       <Toast />
     </View>
   );

@@ -73,6 +73,7 @@ export default function UserSlot({
   isTurn: boolean;
   remain: number;
 }) {
+  
   const { user } = useUser();
   const currentEmail = user?.emailAddresses[0].emailAddress;
 
