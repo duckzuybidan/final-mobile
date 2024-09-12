@@ -40,7 +40,8 @@ export default function UserSlot({
   player,
   gameState,  
   onboardCard,
-  isTurn  
+  isTurn ,
+  remain  
   }:{
   no: number,
   userEmail?: string,
@@ -48,7 +49,8 @@ export default function UserSlot({
   player: Player, 
   gameState: number,
   onboardCard :Card[],
-  isTurn:boolean   
+  isTurn:boolean  ,
+  remain:number  
   }){
   const {user} = useUser()
   const currentEmail = user?.emailAddresses[0].emailAddress
@@ -548,7 +550,7 @@ export default function UserSlot({
               uri: "https://www.deckofcardsapi.com/static/img/back.png",
             }}   resizeMode='contain' className='w-[40px] h-[40px]' />  
               <View className='absolute top-[20%] left-[10px] bg-white rounded-full w-[20px] h-[20px]'>
-                <Text className='text-center fonr-bold text-red-500'>haha</Text>
+                <Text className='text-center fonr-bold text-red-500'>{remain}</Text>
               </View>
             </View>
           )

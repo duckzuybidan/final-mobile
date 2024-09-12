@@ -28,6 +28,7 @@ export default function Page() {
   const currentEmail = user?.emailAddresses[0].emailAddress;
   const [members, setMembers] = useState([]);
   const [turn, setTurn] = useState<boolean[]>([]);
+ 
   const [roomInfo, setRoomInfo] = useState({
     password: "",
     host: "",
@@ -114,7 +115,8 @@ export default function Page() {
         return;
       }
     }
-
+    const roomRef = doc(db, "rooms", id as string);
+    const room = await getDoc(roomRef);
     const dealUrl =
       "https://www.deckofcardsapi.com/api/deck/new/draw/?count=" +
       members.length * 13;
@@ -142,12 +144,13 @@ export default function Page() {
           });
         }
         let turn = 0;
+        console.log(room.data()?.preRoundWinner ) 
         if (
-          roomInfo.preRoundWinner !== undefined &&
-          roomInfo.preRoundWinner !== ""
+          room.data()?.preRoundWinner !== undefined &&
+          room.data()?.preRoundWinner !== ""
         ) {
           turn = players.findIndex(
-            (player: Player) => player.email === roomInfo.preRoundWinner
+            (player: Player) => player.email ===  room.data()?.preRoundWinner
           );
         } else if (members.length === 4) {
           turn = cardSegments.findIndex((segment) =>
@@ -207,8 +210,9 @@ export default function Page() {
         }
         const turn = room.data()?.turn;
         const turnList: boolean[] = []; 
+        const remainList:number[] = []; 
         const index = room.data()?.members.indexOf(currentEmail);
-        let menbers2  
+        let menbers2:any  
         if (index !== -1) {
           menbers2 = (
             room
@@ -221,8 +225,13 @@ export default function Page() {
           if (room.data()?.members[turn] === menbers2[i]) {
             turnList.push(true);  
           } else turnList.push(false);
+          const p = room
+          .data()
+          ?.player.find((player: Player) => player.email === menbers2[i]); 
+          remainList.push(p.hand.length) 
         }
         setTurn(turnList); 
+        setRemain(remainList) 
       }
      
       if (room.data()?.onboardCard) {
@@ -238,31 +247,24 @@ export default function Page() {
     if (
       room.data()?.player.some((player: Player) => player.hand.length === 0) ===
         false ||
-      gameState === 0 || room.data()?.player.some((player: Player) => player.email === currentEmail) ===
-      false  
+      gameState === 0   
     )
       return; 
     if (currentEmail === roomInfo.host) {
       const winner = room
         .data()
         ?.player.find((player: Player) => player.hand.length === 0);
-      const roomDataPlayers = room.data()?.player;
-      const newRoomDataPlayers = roomDataPlayers.map((p: Player) => {
-        return {
-          ...p,
-          hand: [],
-        };
-      });
+       
       updateDoc(roomRef, {
         preRoundWinner: winner.email,
         onGameState: 0,
-        player: newRoomDataPlayers,
+         
         onboardCard: [],
       });
     }
     const winner = room
       .data()
-      ?.player.find((player: Player) => player.hand.length === 0);
+      ?.player.find((player: Player) => player.hand.length === 0); 
     if (currentEmail === winner.email) {
       Toast.show({
         type: "info",
@@ -341,6 +343,7 @@ export default function Page() {
       {[...Array(4)].map((_, index) => {
         const member = members[index];
         const isTurn = turn[index];
+        const remains = remain[index]; 
         return (
           <UserSlot
             key={index}
@@ -351,6 +354,7 @@ export default function Page() {
             gameState={gameState}
             onboardCard={onboardCard}
             isTurn={isTurn}
+            remain ={remains}
           />
         );
       })}
