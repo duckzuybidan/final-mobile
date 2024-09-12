@@ -51,6 +51,8 @@ export default function UserSlot({
     onTurn: false,
     isPass: false
   });
+  const [eturn,seteTurn] = useState<boolean>( ) 
+  const [remain,setRemain] = useState<number>( )
   const [onboardCard,setOnboardCard] = useState<Card[]>([]) 
   const [selectedCardIndices, setSelectedCardIndices] = useState<number[]>([]); 
   const { id } = useLocalSearchParams(); 
@@ -207,15 +209,27 @@ export default function UserSlot({
     });
   };
  
-  const checkEndGame = async (room:any,roomRef:any) => {  
-    if(room.data()?.player.some((player :Player) => player.hand.length === 0 ) && gameState === 1) { 
-      if(currentEmail === host)
-      { updateDoc(roomRef, {
-        preRoundWinner : room.data()?.player.find((player:Player) => player.hand.length === 0),
-        onGameState : 0,
-        player : []  
-        })  
-      }
+  const checkEndGame = async ()  => { 
+    if(!gameState)  return
+    const roomRef =doc(db, 'rooms', id as string) 
+    const room= await getDoc(roomRef)
+    if(room.data()?.player.some((player :Player) => player.hand.length === 0 ) === false || gameState === 0) return   
+     if(currentEmail === host){     
+        const winner = room.data()?.player.find((player:Player) => player.hand.length === 0 );
+        const roomDataPlayers = room.data()?.player; 
+        const newRoomDataPlayers = roomDataPlayers.map((p: Player) => { 
+          return {
+            ...p,
+            hand : [],
+          }; 
+        })    
+          updateDoc(roomRef, {
+          preRoundWinner : winner.email ,
+          onGameState : 0,
+          player :newRoomDataPlayers  ,
+          onboardCard:[] 
+          })   
+      } 
       if(currentEmail === room.data()?.preRoundWinner){ 
         Toast.show({
           type: "info",
@@ -229,31 +243,44 @@ export default function UserSlot({
           visibilityTime: 4000 
         }); 
       } 
-      if(currentEmail !== host) return
+      if(currentEmail !== host ) return  
       const userRef = doc(db, "users", userEmail as string) 
-      const user = await getDoc(userRef); 
+      const user = await getDoc(userRef);  
       if(userEmail === room.data()?.preRoundWinner) 
       {updateDoc(doc(db, "users", userEmail as string), {
-        coins: user.data()?.coins + 30
+        coins: user.data()?.coins + (room.data()?.player.length -1)*15
       }) 
       }else{
         updateDoc(doc(db, "users", userEmail as string), {
-          coins: user.data()?.coins - 30
+          coins: user.data()?.coins - 15
         }) 
-      } 
-    }    
+      }  
   };  
  
-   
+ 
   const isTurn = async () => {
     const roomRef = doc(db, "rooms", id as string);
     const room = await getDoc(roomRef);
     const turn = room.data()?.turn;
     if (room.data()?.player[turn].email === currentEmail) {
-       return true
-    }return false
+      return true  
+    }
+     return false  
   };
-   
+  const setStuff= async () => {
+    const roomRef = doc(db, "rooms", id as string);
+    const room = await getDoc(roomRef);
+    const p = room.data()?.player.find((i: Player) => i.email === userEmail); 
+    if(p){
+      setRemain(p.hand.length) 
+      const turn = room.data()?.turn;
+      if (room.data()?.player[turn].email === userEmail) {
+          seteTurn(true) 
+      }
+        else seteTurn(false)  
+    }  
+  }; 
+  setStuff(); 
   const  updateTurn = async () => {
     const roomRef = doc(db, "rooms", id as string);
     const room = await getDoc(roomRef);
@@ -428,18 +455,18 @@ export default function UserSlot({
   }, [userEmail])
  
   useEffect(() => {
-    onSnapshot(doc(db, 'rooms', id as string), (room) => { 
-      checkEndGame(room,doc(db, 'rooms', id as string));  
-      if(room.data()?.player){
+    onSnapshot(doc(db, 'rooms', id as string),   (room) => { 
+       if(room.data()?.player){
         const player = room.data()?.player.find((p: Player) => p.email === currentEmail);
         if(player){
           setPlayer(player);
-        }
+        } 
       } 
       if(room.data()?.onboardCard){
         setOnboardCard(room.data()?.onboardCard);
       }  
-      setgGameState(room.data()?.onGameState);        
+      setgGameState(room.data()?.onGameState);  
+      checkEndGame();
     })  
     onSnapshot(query(collection(db, "messages"), where("toRoom", "==", id)), async (snapshot) => {
       setMessages(
@@ -447,7 +474,7 @@ export default function UserSlot({
         .sort((a, b) => Number(a.createdAt) - Number(b.createdAt))
       ); 
     }) 
-  }, []);
+  }, [gameState,host]);
    
   useEffect(() => {
     if (scrollRef.current) {
@@ -491,7 +518,7 @@ export default function UserSlot({
              {selectedCardIndices.length > 0  && gameState == 1    && 
               <TouchableOpacity onPress={handleCardPlay} >
                 <View className='px-5 py-2 bg-sky-500 w-max h-max rounded-md'>
-                  <Text className='text-white font-semibold'>Play Card</Text>
+                  <Text className='text-white font-semibold'>Play</Text>
                 </View>
               </TouchableOpacity>
             } 
@@ -571,15 +598,15 @@ export default function UserSlot({
         {userEmail ? (
           <View className={`relative ${no === 1 && 'flex flex-row items-center space-x-2'}`}>
             <View className='flex flex-row space-x-2 items-center'>
-              <Image source={{uri: userData?.avatar}} className='w-[40px] h-[40px] rounded-full' />
+              <Image source={{uri: userData?.avatar}} className='w-[40px] h-[40px] rounded-full' style={ eturn && gameState ? { borderColor: 'green', borderWidth: 2 } : {} } />
               <KickIcon />
             </View>
             <View>
             <Text className='text-sm text-white'>{userData?.name}</Text>
             <View className='flex flex-row items-center space-x-1'>
               <Text className='text-sm text-white'>{userData?.coins}</Text>
-              <Image source={require('../assets/stuff/coin.jpg')} className='rounded-full w-[16px] h-[16px]' />
-              <AddIconStatus />
+              <Image source={require('../assets/stuff/coin.jpg')} className='rounded-full w-[16px] h-[16px]' /> 
+              <AddIconStatus /> 
             </View>
             </View>
             {(host === userEmail) && <View className='absolute top-0 left-0'>
@@ -589,6 +616,15 @@ export default function UserSlot({
         ) : (
           <AntDesign name="pluscircleo" size={50} color="black" />
         )}
+        { no != 1&& userEmail  &&(
+            <View>
+            <Image  source={{
+              uri: "https://www.deckofcardsapi.com/static/img/back.png",
+            }}   resizeMode='contain' className='w-[70px] h-[70px] translate-y-0' />  
+            <Text className='text-sm text-white'>{remain}</Text>
+            </View>
+          )
+        }
     </View>
     </>
   )

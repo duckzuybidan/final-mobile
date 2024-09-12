@@ -105,11 +105,8 @@ export default function Page() {
     } 
     setGameState(1); 
     const dealUrl =
-      "https://www.deckofcardsapi.com/api/deck/"+ roomInfo.deck_id + "/draw/?count=" + members.length*13 
-      const shuffleUrl =
-      "https://www.deckofcardsapi.com/api/deck/"+  roomInfo.deck_id +"/shuffle/";
-    
-    fetch(shuffleUrl)
+      "https://www.deckofcardsapi.com/api/deck/new/draw/?count=" + members.length*13 
+       
     fetch(dealUrl)
       .then((response) => response.json())
       .then((data) => {
@@ -130,6 +127,7 @@ export default function Page() {
             isPass: false, 
           });
         } 
+        console.log(data.cards.length ) 
         let turn = 0
         if(roomInfo.preRoundWinner !== undefined && roomInfo.preRoundWinner !==""){
             turn = players.findIndex((player: Player) => player.email === roomInfo.preRoundWinner); 
