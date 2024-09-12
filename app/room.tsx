@@ -144,7 +144,7 @@ export default function Page() {
           });
         }
         let turn = 0;
-        console.log(room.data()?.preRoundWinner ) 
+      
         if (
           room.data()?.preRoundWinner !== undefined &&
           room.data()?.preRoundWinner !== ""
@@ -283,11 +283,11 @@ export default function Page() {
 
     const userRef = doc(db, "users", currentEmail as string);
     const user = await getDoc(userRef);
-    if (currentEmail === winner.email) {console.log("+30")
+    if (currentEmail === winner.email) { 
       updateDoc(doc(db, "users", currentEmail as string), {
         coins: user.data()?.coins + (room.data()?.player.length - 1) * 30,
       });
-    } else {console.log("-30")
+    } else { 
       updateDoc(doc(db, "users", currentEmail as string), {
         coins: user.data()?.coins - 30,
       });
