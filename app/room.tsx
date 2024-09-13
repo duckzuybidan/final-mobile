@@ -235,6 +235,13 @@ export default function Page() {
             if (room.data()?.members[turn] === menbers2[i]) {
               turnList.push(true);  
             } else turnList.push(false);         
+            const p = room
+            .data()
+            ?.player.find((player: Player) => player.email === menbers2[i]); 
+            if (p) {
+              remainList.push(p.hand.length) 
+            }
+            else remainList.push(0)
           }
           setTurn(turnList); 
           setRemain(remainList) 
