@@ -642,7 +642,7 @@ export default function UserSlot({
             }`}
           >
             <View className="flex flex-row space-x-2 items-center">
-              <View className={`rounded-full ${isTurn && gameState ? "border-2 border-green-600" : ""}`}>
+              <View className={`w-[45px] h-[45px] rounded-full ${isTurn && gameState ? "border-2 border-green-600" : ""}`}>
               <Image
                 source={{ uri: userData?.avatar }}
                 className="w-[40px] h-[40px] rounded-full"
