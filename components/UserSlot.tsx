@@ -456,17 +456,17 @@ export default function UserSlot({
     }
   }, [messages]);
   useEffect(() => {
-   if(!refresh) return;
-   const fetchUser = async () => {
+   if(!refresh || !userEmail) return;
+   const refetchUser = async () => {
      const userRef = doc(db, "users", userEmail as string);
      const user = await getDoc(userRef);
      setUserData(user.data() as any);
    }
-   fetchUser();
+   refetchUser();
    setTimeout(() => {
      setRefresh(false);
    }, 1000);
-  }, [refresh])
+  }, [userEmail, refresh])
   return (
     <>
       <CustomConfirmModal

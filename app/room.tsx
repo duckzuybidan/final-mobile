@@ -221,7 +221,7 @@ export default function Page() {
         const turn = room.data()?.turn;
         const turnList: boolean[] = []; 
         const remainList:number[] = []; 
-        const index = room.data()?.members.indexOf(currentEmail);
+        const index = room.data()?.members.indexOf(currentEmail) || -1
         let menbers2:any  
         if (index !== -1) {
           menbers2 = (
@@ -230,22 +230,16 @@ export default function Page() {
               ?.members.slice(index)
               .concat(room.data()?.members.slice(0, index))
           );
-        } 
-        for (let i = 0; i < room.data()?.player.length; i++) {
-          if (room.data()?.members[turn] === menbers2[i]) {
-            turnList.push(true);  
-          } else turnList.push(false);
-          const p = room
-          .data()
-          ?.player.find((player: Player) => player.email === menbers2[i]); 
-          if(p.hand)remainList.push(p.hand.length) 
-          else remainList.push(0)
-          
+        
+          for (let i = 0; i < room.data()?.player.length; i++) {
+            if (room.data()?.members[turn] === menbers2[i]) {
+              turnList.push(true);  
+            } else turnList.push(false);         
+          }
+          setTurn(turnList); 
+          setRemain(remainList) 
         }
-        setTurn(turnList); 
-        setRemain(remainList) 
       }
-     
       if (room.data()?.onboardCard) {
         setOnboardCard(room.data()?.onboardCard);
       }
@@ -363,7 +357,7 @@ useEffect(() => {
         onboardCard={onboardCard}
         isTurn={turn[0]}
         remain ={remain[0]}
-        refresh={refresh}
+        refresh={false}
         setRefresh={setRefresh}
       />
       <UserSlot
