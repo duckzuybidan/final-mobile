@@ -1,6 +1,6 @@
 import { useAuth, useClerk, useOAuth } from "@clerk/clerk-expo";
 import { Image, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
-import { SignedIn, SignedOut, useUser } from '@clerk/clerk-expo'
+import { SignedIn, SignedOut, useUser } from "@clerk/clerk-expo";
 import { touchSound } from "@/utils/effects";
 import * as Linking from 'expo-linking';
 import { useEffect, useState } from "react";

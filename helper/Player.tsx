@@ -56,7 +56,7 @@ export default class Player {
     }
 
     public isValidPlay(onBoardCards: Card[]): boolean {
-        return isValidPlay(this.preparedCards, onBoardCards);
+        return isValidPlay(this.preparedCards, onBoardCards, false);
     }
 
     public isEndGame(): boolean {
